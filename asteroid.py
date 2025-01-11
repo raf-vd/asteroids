@@ -9,6 +9,7 @@ class Asteroid(CircleShape):
         self.score_value = 1800 / self.radius
 
     def draw(self, screen):
+        self.wrap_screen(screen)
         pygame.draw.circle(screen, "red", self.position, self.radius, 2)
 
     def update(self, dt):

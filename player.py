@@ -22,6 +22,7 @@ class Player(CircleShape):
 
     # override draw from CircleShape
     def draw(self, screen):
+        self.wrap_screen(screen)
         pygame.draw.polygon(screen, (255, 255, 255), self.triangle(), 2)
 
     # rotate the player (left, right)
