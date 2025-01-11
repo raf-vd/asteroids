@@ -10,6 +10,9 @@ class Player(CircleShape):
         super().__init__(x, y, PLAYER_RADIUS)
         self.rotation = 0
         self.shoot_timer = 0
+        self.spawn_guard = PLAYER_SPAWN_SAFEGUARD
+        self.lives = 3
+        self.colour = "green"
 
     #  calculate a triangle for player
     def triangle(self):
@@ -23,7 +26,7 @@ class Player(CircleShape):
     # override draw from CircleShape
     def draw(self, screen):
         self.wrap_screen(screen)
-        pygame.draw.polygon(screen, (255, 255, 255), self.triangle(), 2)
+        pygame.draw.polygon(screen, self.colour, self.triangle(), 2)
 
     # rotate the player (left, right)
     def rotate(self, dt):
@@ -38,6 +41,12 @@ class Player(CircleShape):
     def update(self, dt):
 
         self.shoot_timer -= dt
+        if self.spawn_guard < PLAYER_SPAWN_SAFEGUARD * 0.2: # return to fighting color at 80% of spawn_guard has passed so player gets to safety asap
+            self.colour = "white"
+
+        if self.spawn_guard > 0:
+            self.spawn_guard -= dt
+
         keys = pygame.key.get_pressed()
 
         if keys[pygame.K_q]:
@@ -57,3 +66,17 @@ class Player(CircleShape):
         self.shoot_timer = PLAYER_SHOOT_COOLDOWN
         shot = Shot(self.position.x, self.position.y)
         shot.velocity = pygame.Vector2(0, 1).rotate(self.rotation) * PLAYER_SHOOT_SPEED
+
+    def collides(self, target):
+        # disable collision for PLAYER_SPAWN_SAFEGUARD seconds after spawning
+        if self.spawn_guard > 0: 
+            return False
+        
+        if self.check_collision(target):
+            self.lives -= 1
+            self.colour = "green"                       # Change player color to show he is invulnerable for now
+            self.spawn_guard = PLAYER_SPAWN_SAFEGUARD
+            self.position.x = SCREEN_WIDTH / 2
+            self.position.y = SCREEN_HEIGHT / 2
+            return True
+        return False

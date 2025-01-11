@@ -50,14 +50,19 @@ def main():
                     obj.split()
                     bullet.kill()
                     score += obj.score_value
-            if obj.check_collision(player):
-                print(f"Game over with final score {score} ")
-                sys.exit()
+            if player.collides(obj):
+                if player.lives < 1:
+                    print(f"Game over with final score {int(score)} ")
+                    sys.exit()
+                # coding flow help
+                print(f"player collided with object at {obj.position.x}, {obj.position.y} and lost a life, new lives: {player.lives}")
 
         screen.fill("black")
 
-        score_text = font.render(f"Score: {score}", True, "green")
+        score_text = font.render(f"Score: {int(score)}", True, "green")
+        lives_text = font.render(f"Lives: {player.lives}", True, "green")
         screen.blit(score_text, (10, 10))
+        screen.blit(lives_text, (10, 35))
 
         for obj in drawable:
             obj.draw(screen)
