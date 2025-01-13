@@ -20,6 +20,7 @@ def main():
     clock = pygame.time.Clock()
     font = pygame.font.Font(None, 36)
     score = 0
+    background = pygame.image.load("image/space.jpg")
 
     updatable = pygame.sprite.Group()
     drawable = pygame.sprite.Group()
@@ -58,6 +59,7 @@ def main():
                 print(f"player collided with object at {obj.position.x}, {obj.position.y} and lost a life, new lives: {player.lives}")
 
         screen.fill("black")
+        screen.blit(background, (0,0))
 
         score_text = font.render(f"Score: {int(score)}", True, "green")
         lives_text = font.render(f"Lives: {player.lives}", True, "green")

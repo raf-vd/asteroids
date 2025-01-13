@@ -2,6 +2,7 @@ import pygame
 from constants import *
 from circleshape import CircleShape
 from shot import Shot
+from functions import point_in_triangle, point_to_line_distance
 
 
 # Class to handle the player
@@ -14,6 +15,7 @@ class Player(CircleShape):
         self.lives = 3
         self.colour = "green"
 
+
     #  calculate a triangle for player
     def triangle(self):
         forward = pygame.Vector2(0, 1).rotate(self.rotation)
@@ -23,19 +25,23 @@ class Player(CircleShape):
         c = self.position - forward * self.radius + right
         return [a, b, c]
 
+
     # override draw from CircleShape
     def draw(self, screen):
         self.wrap_screen(screen)
         pygame.draw.polygon(screen, self.colour, self.triangle(), 2)
 
+
     # rotate the player (left, right)
     def rotate(self, dt):
         self.rotation += PLAYER_TURN_SPEED * dt
+
 
     # move the player (forward, back)
     def move(self, dt):
         forward = pygame.Vector2(0, 1).rotate(self.rotation)
         self.position += forward * PLAYER_SPEED * dt
+
 
     # process inputs from keys
     def update(self, dt):
@@ -60,12 +66,33 @@ class Player(CircleShape):
         if keys[pygame.K_SPACE]:
             self.shoot()
 
+
     def shoot(self):
         if self.shoot_timer > 0:
             return
         self.shoot_timer = PLAYER_SHOOT_COOLDOWN
         shot = Shot(self.position.x, self.position.y)
         shot.velocity = pygame.Vector2(0, 1).rotate(self.rotation) * PLAYER_SHOOT_SPEED
+
+
+    def check_collision(self, other):
+        # Broad check (avoid detailed checks when possible)
+        if self.position.distance_to(other.position) > self.radius + other.radius:
+            return False
+        
+        # Circle-centre check (avoid detailed checks when possible)
+        triangle_points = self.triangle()
+        if point_in_triangle(other.position, triangle_points):
+            True
+
+        # Check circle-centre distance to all (3) sides of self
+        for i in range(3):
+            start = triangle_points[i]           # 1 -> 2 -> 3
+            end = triangle_points[ (i + 1) % 3]  # 2 -> 3 -> 1
+            if point_to_line_distance(other.position, start, end) <= other.radius:
+                return True
+            
+        return False
 
     def collides(self, target):
         # disable collision for PLAYER_SPAWN_SAFEGUARD seconds after spawning
