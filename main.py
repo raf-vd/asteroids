@@ -1,9 +1,7 @@
-# this allows us to use code from
-# the open-source pygame library
-# throughout this file
 import pygame
 import sys
 import os
+from scoreboard import ScoreBoard
 from player import Player
 from asteroid import Asteroid
 from asteroidfield import AsteroidField
@@ -16,10 +14,8 @@ def main():
     pygame.init()
     pygame.font.init()
 
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     clock = pygame.time.Clock()
-    font = pygame.font.Font(None, 36)
-    score = 0
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     background = pygame.image.load("image/space.jpg")
 
     updatable = pygame.sprite.Group()
@@ -34,7 +30,7 @@ def main():
 
     asteroidfield = AsteroidField()
     player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
-
+    scoreboard = ScoreBoard(player.lives, STARTING_LEVEL)
     dt = 0
 
     while True:
@@ -43,28 +39,28 @@ def main():
                 return
 
         for obj in updatable:
-            obj.update(dt)
+            obj.update(dt)   
 
         for obj in asteroids:
+
             for bullet in shots:
                 if obj.check_collision(bullet):
                     obj.split()
                     bullet.kill()
-                    score += obj.score_value
+                    # When add returns True, a new level was reached, and Asteroids will speed up
+                    if scoreboard.add(obj.score_value):   
+                        Asteroid.velocity_multiplier += 1
+
             if player.collides(obj):
                 if player.lives < 1:
-                    print(f"Game over with final score {int(score)} ")
+                    print(f"Game over with final score {int(scoreboard.score)} ")
                     sys.exit()
-                # coding flow help
+                scoreboard.lose_life()
                 print(f"player collided with object at {obj.position.x}, {obj.position.y} and lost a life, new lives: {player.lives}")
 
         screen.fill("black")
         screen.blit(background, (0,0))
-
-        score_text = font.render(f"Score: {int(score)}", True, "green")
-        lives_text = font.render(f"Lives: {player.lives}", True, "green")
-        screen.blit(score_text, (10, 10))
-        screen.blit(lives_text, (10, 35))
+        scoreboard.update(screen)
 
         for obj in drawable:
             obj.draw(screen)

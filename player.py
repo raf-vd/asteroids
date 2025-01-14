@@ -12,7 +12,7 @@ class Player(CircleShape):
         self.rotation = 0
         self.shoot_timer = 0
         self.spawn_guard = PLAYER_SPAWN_SAFEGUARD
-        self.lives = 3
+        self.lives = PLAYER_STARTING_LIVES
         self.colour = "green"
 
 
@@ -40,7 +40,7 @@ class Player(CircleShape):
     # move the player (forward, back)
     def move(self, dt):
         forward = pygame.Vector2(0, 1).rotate(self.rotation)
-        self.position += forward * PLAYER_SPEED * dt
+        self.position += forward * PLAYER_SPEED * dt 
 
 
     # process inputs from keys

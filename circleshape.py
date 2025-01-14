@@ -3,6 +3,9 @@ from constants import *
 
 # Base class for game objects
 class CircleShape(pygame.sprite.Sprite):
+
+    velocity_multiplier =  1
+
     def __init__(self, x, y, radius):
         # we will be using this later
         if hasattr(self, "containers"):
