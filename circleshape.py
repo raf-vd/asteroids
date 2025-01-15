@@ -29,10 +29,12 @@ class CircleShape(pygame.sprite.Sprite):
         distance = self.position.distance_to(other.position)
         return distance <= self.radius + other.radius
 
+    # used for killing shots
     def is_off_screen(self, screen):
-        return (self.position.x < -ASTEROID_MAX_RADIUS or self.position.x > screen.get_width() + ASTEROID_MAX_RADIUS or
-                self.position.y < -ASTEROID_MAX_RADIUS or self.position.y > screen.get_height() + ASTEROID_MAX_RADIUS) 
+         return (self.position.x < -ASTEROID_MAX_RADIUS or self.position.x > screen.get_width() + ASTEROID_MAX_RADIUS or
+                 self.position.y < -ASTEROID_MAX_RADIUS or self.position.y > screen.get_height() + ASTEROID_MAX_RADIUS) 
     
+    # basic circle off-screen wrap
     def wrap_screen(self, screen):
         if self.position.x < 0 - self.radius:
             self.position.x = screen.get_width()

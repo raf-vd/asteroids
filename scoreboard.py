@@ -8,7 +8,8 @@ class ScoreBoard():
         self.lives = lives
         self.level = level
         self.level_score = 0
-        self.font = pygame.font.Font(None, 36)
+        self.font36 = pygame.font.Font(None, 36)
+        self.font24 = pygame.font.Font(None, 24)
 
     # If new level is reached, return True, if notn return False
     def add(self, value = 1):
@@ -28,9 +29,9 @@ class ScoreBoard():
         print(f"Level up by {value} to level {self.level}!")
 
     def update(self, screen):
-        score_text = self.font.render(f"Score: {int(self.score)}", True, "green")
-        lives_text = self.font.render(f"Lives: {self.lives}", True, "green")
-        level_text = self.font.render(f"Level: {self.level}", True, "white")
+        score_text = self.font36.render(f"Score: {int(self.score)}", True, "green")
+        lives_text = self.font36.render(f"Lives: {self.lives}", True, "green")
+        level_text = self.font24.render(f"Level: {self.level}", True, "white")
         screen.blit(score_text, (10, 10))
         screen.blit(lives_text, (10, 35))
         screen.blit(level_text, (10, 60))

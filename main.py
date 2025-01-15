@@ -3,7 +3,7 @@ import sys
 import os
 from scoreboard import ScoreBoard
 from player import Player
-from asteroid import Asteroid
+from asteroid import LumpyAsteroid
 from asteroidfield import AsteroidField
 from shot import Shot
 from constants import *
@@ -24,7 +24,7 @@ def main():
     shots = pygame.sprite.Group()
 
     Player.containers = (updatable, drawable)
-    Asteroid.containers = (asteroids, updatable, drawable)
+    LumpyAsteroid.containers = (asteroids, updatable, drawable)
     AsteroidField.containers = updatable
     Shot.containers = (shots, updatable, drawable)
 
@@ -49,7 +49,7 @@ def main():
                     bullet.kill()
                     # When add returns True, a new level was reached, and Asteroids will speed up
                     if scoreboard.add(obj.score_value):   
-                        Asteroid.velocity_multiplier += 1
+                        LumpyAsteroid.velocity_multiplier *= 1 + ASTEROID_VELOCITY_MULTIPLIER
 
             if player.collides(obj):
                 if player.lives < 1:
@@ -58,7 +58,6 @@ def main():
                 scoreboard.lose_life()
                 print(f"player collided with object at {obj.position.x}, {obj.position.y} and lost a life, new lives: {player.lives}")
 
-        screen.fill("black")
         screen.blit(background, (0,0))
         scoreboard.update(screen)
 

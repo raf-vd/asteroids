@@ -1,6 +1,6 @@
 import pygame
 import random
-from asteroid import Asteroid
+from asteroid import LumpyAsteroid
 from constants import *
 
 
@@ -33,7 +33,7 @@ class AsteroidField(pygame.sprite.Sprite):
         self.spawn_timer = 0.0
 
     def spawn(self, radius, position, velocity):
-        asteroid = Asteroid(position.x, position.y, radius)
+        asteroid = LumpyAsteroid(position.x, position.y, radius)
         asteroid.velocity = velocity
 
     def update(self, dt):
