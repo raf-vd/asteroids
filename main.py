@@ -38,19 +38,29 @@ def main():
             if event.type == pygame.QUIT:
                 return
 
-        for obj in updatable:
+        for obj in updatable:    
             obj.update(dt)   
 
         for obj in asteroids:
 
             for bullet in shots:
-                if obj.check_collision(bullet):
-                    obj.split()
-                    bullet.kill()
-                    # When add returns True, a new level was reached, and Asteroids will speed up
-                    if scoreboard.add(obj.score_value):   
-                        LumpyAsteroid.velocity_multiplier *= 1 + ASTEROID_VELOCITY_MULTIPLIER
 
+                # Check returns -2 for miss,-1 for body hit, index of lump for lump hit
+                rc = obj.check_collision(bullet)
+                if rc >= -1:
+                    score_hit = 0
+                    bullet.kill()
+                    if rc > -1:
+                        score_hit = (obj.score_value / len(obj.lumps)) / 2
+                        del obj.lumps[rc]
+                    else:
+                        obj.split()
+                        score_hit = obj.score_value
+
+                    # When add returns True, a new level was reached, and Asteroids will speed up
+                    if scoreboard.add(score_hit):                           
+                        LumpyAsteroid.velocity_multiplier *= 1 + ASTEROID_VELOCITY_MULTIPLIER
+  
             if player.collides(obj):
                 if player.lives < 1:
                     print(f"Game over with final score {int(scoreboard.score)} ")

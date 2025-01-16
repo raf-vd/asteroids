@@ -77,12 +77,13 @@ class LumpyAsteroid(CircleShape):
     def check_collision(self, other):
         if super().check_collision(other):
             print("main part of asteroid hit")  # split into 2 new lumpy asteroids 
-            return True
+            return -1
         for lump in self.lumps:
             if lump.check_collision(other):
                 print("lump hit")               # break of hit lump as new lump (?new lumps?)
-                return True
-
+                return self.lumps.index(lump)
+                #return True
+        return -2
 
     def wrap_screen(self, screen):
         # Store original position
