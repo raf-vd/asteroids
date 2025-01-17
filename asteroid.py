@@ -11,7 +11,6 @@ class LumpyAsteroid(CircleShape):
         self.lumps = self.generate_random_lumps()
         self.score_value = 1800 / self.radius
 
-
     def draw(self, screen):
         self.wrap_screen(screen)
         pygame.draw.circle(screen, self.get_colour(), self.position, self.radius, 0)
@@ -22,7 +21,6 @@ class LumpyAsteroid(CircleShape):
         self.position +=  self.velocity * dt * LumpyAsteroid.velocity_multiplier
         for lump in self.lumps:
             lump.position +=  self.velocity * dt * LumpyAsteroid.velocity_multiplier
-
 
     def get_colour(self):
         if self.radius == ASTEROID_MAX_RADIUS:
@@ -76,23 +74,20 @@ class LumpyAsteroid(CircleShape):
 
     def check_collision(self, other):
         if super().check_collision(other):
-            print("main part of asteroid hit")  # split into 2 new lumpy asteroids 
             return -1
         for lump in self.lumps:
             if lump.check_collision(other):
-                print("lump hit")               # break of hit lump as new lump (?new lumps?)
                 return self.lumps.index(lump)
-                #return True
         return -2
 
     def wrap_screen(self, screen):
         # Store original position
         old_x = self.position.x
         old_y = self.position.y
-        
+
         # Wrap main body
         super().wrap_screen(screen)
-
+        
         # If position changed, update all lumps by the same amount
         if old_x != self.position.x or old_y != self.position.y:
             dx = self.position.x - old_x
