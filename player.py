@@ -9,6 +9,9 @@ from functions import point_in_triangle, point_to_line_distance
 class Player(CircleShape):
     def __init__(self, x, y):
         super().__init__(x, y, PLAYER_RADIUS)
+        self.__upgrade_key_cooldown_timer = 0
+        self.__upgrade_countdown_piercing = 0
+        self.__upgrade_countdown_bulletsize = 0
         self.rotation = 0
         self.shoot_timer = 0
         self.spawn_guard = PLAYER_SPAWN_SAFEGUARD
@@ -25,23 +28,19 @@ class Player(CircleShape):
         c = self.position - forward * self.radius + right
         return [a, b, c]
 
-
     # override draw from CircleShape
     def draw(self, screen):
         self.wrap_screen(screen)
         pygame.draw.polygon(screen, self.colour, self.triangle(), 2)
 
-
     # rotate the player (left, right)
     def rotate(self, dt):
         self.rotation += PLAYER_TURN_SPEED * dt
-
 
     # move the player (forward, back)
     def move(self, dt):
         forward = pygame.Vector2(0, 1).rotate(self.rotation)
         self.position += forward * PLAYER_SPEED * dt 
-
 
     # process inputs from keys
     def update(self, dt):
@@ -53,19 +52,42 @@ class Player(CircleShape):
         if self.spawn_guard > 0:
             self.spawn_guard -= dt
 
+        if self.__upgrade_key_cooldown_timer > 0:
+            self.__upgrade_key_cooldown_timer -= dt
+
+        if self.__upgrade_countdown_piercing > 0:
+            self.__upgrade_countdown_piercing -= dt
+        else:
+            if Shot.piercing_active:
+                Shot.piercing_active = False
+
+        if self.__upgrade_countdown_bulletsize > 0:
+            self.__upgrade_countdown_bulletsize-= dt
+        else:
+            self.activate_upgrade("SMALLER_SHOT")
+
         keys = pygame.key.get_pressed()
 
-        if keys[pygame.K_q]:
-            self.rotate(-dt)
-        if keys[pygame.K_d]:
-            self.rotate(dt)
-        if keys[pygame.K_z]:
-            self.move(dt)
-        if keys[pygame.K_s]:
-            self.move(-dt)
-        if keys[pygame.K_SPACE]:
-            self.shoot()
+        if keys[pygame.K_q]:     self.rotate(-dt)
+        if keys[pygame.K_d]:     self.rotate(dt)
+        if keys[pygame.K_z]:     self.move(dt)
+        if keys[pygame.K_s]:     self.move(-dt)
+        if keys[pygame.K_SPACE]: self.shoot()
 
+        if self.__upgrade_key_cooldown_timer > 0:
+            return False
+        
+        if keys[pygame.K_DELETE]:
+            self.activate_upgrade("PIERCING")
+            self.__upgrade_key_cooldown_timer = UPGRADE_KEY_COOLDOWN_TIMER
+
+        if keys[pygame.K_PAGEUP]:
+            self.activate_upgrade("BIGGER_SHOT")
+            self.__upgrade_key_cooldown_timer = UPGRADE_KEY_COOLDOWN_TIMER
+
+        if keys[pygame.K_PAGEDOWN]:
+            self.activate_upgrade("SMALLER_SHOT")
+            self.__upgrade_key_cooldown_timer = UPGRADE_KEY_COOLDOWN_TIMER
 
     def shoot(self):
         if self.shoot_timer > 0:
@@ -73,7 +95,6 @@ class Player(CircleShape):
         self.shoot_timer = PLAYER_SHOOT_COOLDOWN
         shot = Shot(self.position.x, self.position.y)
         shot.velocity = pygame.Vector2(0, 1).rotate(self.rotation) * PLAYER_SHOOT_SPEED
-
 
     def check_collision(self, other):
         # Broad check (avoid detailed checks when possible)
@@ -107,3 +128,18 @@ class Player(CircleShape):
             self.position.y = SCREEN_HEIGHT / 2
             return True
         return False
+    
+    def activate_upgrade(self, upgrade):
+        if upgrade == "PIERCING":
+            if not Shot.piercing_active:
+                Shot.piercing_active = True
+                self.__upgrade_countdown_piercing = 5
+        elif upgrade == "BIGGER_SHOT":
+            if Shot.shot_size_multiplier < 10:
+                Shot.shot_size_multiplier += 1
+                self.__upgrade_countdown_bulletsize = 3
+        elif upgrade == "SMALLER_SHOT":
+            if Shot.shot_size_multiplier > 1:
+                Shot.shot_size_multiplier -= 1
+                if Shot.shot_size_multiplier > 1:
+                    self.__upgrade_countdown_bulletsize = 3

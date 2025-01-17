@@ -39,7 +39,7 @@ def main():
                 return
 
         for obj in updatable:    
-            obj.update(dt)   
+            obj.update(dt)
 
         for obj in asteroids:
 
@@ -49,13 +49,15 @@ def main():
                 rc = obj.check_collision(bullet)
                 if rc >= -1:
                     score_hit = 0
-                    bullet.kill()
+                    if not bullet.pierce:
+                        bullet.kill()
                     if rc > -1:
                         score_hit = (obj.score_value / len(obj.lumps)) / 2
                         del obj.lumps[rc]
                     else:
                         obj.split()
                         score_hit = obj.score_value
+                        player.activate_upgrade("PIERCING")      # centre of asteroid hit => enable piercing shots
 
                     # When add returns True, a new level was reached, and Asteroids will speed up
                     if scoreboard.add(score_hit):                           
@@ -69,13 +71,13 @@ def main():
                 print(f"player collided with object at {obj.position.x}, {obj.position.y} and lost a life, new lives: {player.lives}")
 
         screen.blit(background, (0,0))
-        scoreboard.update(screen)
-
         for obj in drawable:
             obj.draw(screen)
+        scoreboard.update(screen)
 
         pygame.display.flip()
 
+        #dt = clock.tick(60) / 1000
         dt = clock.tick(60) / 1000
 
 
