@@ -2,6 +2,7 @@ import pygame
 import random
 import math
 from constants import *
+from resources import crack_lump, crack_main
 from circleshape import CircleShape
 from explosion import Explosion
 
@@ -74,9 +75,11 @@ class LumpyAsteroid(CircleShape):
 
     def check_collision(self, other):
         if super().check_collision(other):
+            crack_main.play()
             return -1
         for lump in self.lumps:
             if lump.check_collision(other):
+                crack_lump.play()
                 return self.lumps.index(lump)
         return -2
 

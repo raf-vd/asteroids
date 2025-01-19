@@ -1,9 +1,7 @@
 import pygame
 from constants import *
+from resources import shot_sound
 from circleshape import CircleShape
-
-pygame.mixer.init(44100, -16, 2, 2048)
-shot_sound = pygame.mixer.Sound("sound/shot.mp3")
 
 class Shot(CircleShape):
 
