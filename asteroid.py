@@ -58,7 +58,7 @@ class LumpyAsteroid(CircleShape):
         return lumps
 
     def split(self):
-        Explosion(self.position)  # asteroid.rect.center gives the position
+        Explosion(self.position, self.radius / ASTEROID_MAX_RADIUS) 
         self.kill()
         if self.radius <= ASTEROID_MIN_RADIUS:
             return False #asteroid destroyed
