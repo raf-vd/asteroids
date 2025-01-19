@@ -16,10 +16,10 @@ class Explosion(pygame.sprite.Sprite):
         return cls.__animation_frames
 
     def __init__(self, position):
-        super().__init__()
-    
-        for container in Explosion.containers:
-            container.add(self)
+        if hasattr(self, "containers"):
+            super().__init__(self.containers)
+        else:
+            super().__init__()
 
         self.frames = self.load_frames()
         self.current_frame = 0
