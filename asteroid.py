@@ -1,8 +1,9 @@
 import pygame
 import random
 import math
-from circleshape import CircleShape
 from constants import *
+from circleshape import CircleShape
+from explosion import Explosion
 
 
 class LumpyAsteroid(CircleShape):
@@ -30,7 +31,6 @@ class LumpyAsteroid(CircleShape):
         else:
             return "red"
 
-
     def generate_random_lumps(self):
         num_lumps = random.randint(3, 6)
         lumps = []
@@ -48,7 +48,7 @@ class LumpyAsteroid(CircleShape):
             # make sure the lump sticks out (enough)
             distance_to_edge = self.radius - offset_distance
             min_lump_radius = distance_to_edge + 10
-            max_lump_radius = self.radius * 0.9
+            max_lump_radius = self.radius * ASTEROID_MAX_LUMP_SIZE
             lump_radius = random.uniform(min_lump_radius, max_lump_radius)
 
             # create the lump
@@ -57,11 +57,11 @@ class LumpyAsteroid(CircleShape):
         # return list of lumps
         return lumps
 
-
     def split(self):
+        Explosion(self.position)  # asteroid.rect.center gives the position
         self.kill()
         if self.radius <= ASTEROID_MIN_RADIUS:
-            return
+            return False #asteroid destroyed
         random_angle = random.uniform(20, 50)
         direction_1 = self.velocity.rotate(random_angle)
         direction_2 = self.velocity.rotate(-random_angle)
@@ -70,7 +70,7 @@ class LumpyAsteroid(CircleShape):
         new_asteroid_2 = LumpyAsteroid(self.position.x, self.position.y, new_radius)
         new_asteroid_1.velocity = direction_1 * 1.2
         new_asteroid_2.velocity = direction_2 * 1.2
-
+        return True #asteroid split
 
     def check_collision(self, other):
         if super().check_collision(other):

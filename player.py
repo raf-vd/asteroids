@@ -97,16 +97,29 @@ class Player(CircleShape):
         shot.velocity = pygame.Vector2(0, 1).rotate(self.rotation) * PLAYER_SHOOT_SPEED
 
     def check_collision(self, other):
-        # Broad check (avoid detailed checks when possible)
-        if self.position.distance_to(other.position) > self.radius + other.radius:
+        # Broad check: circular player outside mainradius + lumpradius
+        if self.position.distance_to(other.position) > self.radius + other.radius * (1 + ASTEROID_MAX_LUMP_SIZE):
             return False
         
+        # Check player collides with main body
+        if self.triangle_circle_collide(other):
+            return True
+
+        # Check player collides with any lump
+        for lump in other.lumps:
+            if self.triangle_circle_collide(lump):
+                return True
+
+        return False
+
+    def triangle_circle_collide(self, other):
+
         # Circle-centre check (avoid detailed checks when possible)
         triangle_points = self.triangle()
         if point_in_triangle(other.position, triangle_points):
             True
 
-        # Check circle-centre distance to all (3) sides of self
+        # Check if circle collised with any side
         for i in range(3):
             start = triangle_points[i]           # 1 -> 2 -> 3
             end = triangle_points[ (i + 1) % 3]  # 2 -> 3 -> 1
@@ -137,9 +150,9 @@ class Player(CircleShape):
         elif upgrade == "BIGGER_SHOT":
             if Shot.shot_size_multiplier < 10:
                 Shot.shot_size_multiplier += 1
-                self.__upgrade_countdown_bulletsize = 3
+                self.__upgrade_countdown_bulletsize = 1
         elif upgrade == "SMALLER_SHOT":
             if Shot.shot_size_multiplier > 1:
                 Shot.shot_size_multiplier -= 1
                 if Shot.shot_size_multiplier > 1:
-                    self.__upgrade_countdown_bulletsize = 3
+                    self.__upgrade_countdown_bulletsize = 1

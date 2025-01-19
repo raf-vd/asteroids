@@ -1,14 +1,15 @@
 import pygame
 import sys
 import os
+from constants import *
+from explosion import Explosion
 from scoreboard import ScoreBoard
 from player import Player
 from asteroid import LumpyAsteroid
 from asteroidfield import AsteroidField
 from shot import Shot
-from constants import *
 
-def main():
+def main(): 
     print("Starting asteroids!")
 
     pygame.init()
@@ -22,11 +23,13 @@ def main():
     drawable = pygame.sprite.Group()
     asteroids = pygame.sprite.Group()
     shots = pygame.sprite.Group()
+    explosions = pygame.sprite.Group()
 
     Player.containers = (updatable, drawable)
     LumpyAsteroid.containers = (asteroids, updatable, drawable)
     AsteroidField.containers = updatable
     Shot.containers = (shots, updatable, drawable)
+    Explosion.containers = (explosions, updatable, drawable)
 
     asteroidfield = AsteroidField()
     player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
@@ -55,9 +58,11 @@ def main():
                         score_hit = (obj.score_value / len(obj.lumps)) / 2
                         del obj.lumps[rc]
                     else:
-                        obj.split()
+                        if obj.split():
+                            player.activate_upgrade("PIERCING")      # centre of asteroid hit => enable piercing shots
+                        else:
+                            player.activate_upgrade("BIGGER_SHOT")      # smallest size asteroid centre hit => enable larger shots
                         score_hit = obj.score_value
-                        player.activate_upgrade("PIERCING")      # centre of asteroid hit => enable piercing shots
 
                     # When add returns True, a new level was reached, and Asteroids will speed up
                     if scoreboard.add(score_hit):                           
@@ -72,12 +77,14 @@ def main():
 
         screen.blit(background, (0,0))
         for obj in drawable:
-            obj.draw(screen)
+            if not isinstance(obj, Explosion):
+                obj.draw(screen)
+        for exp in explosions:
+            exp.draw(screen)
         scoreboard.update(screen)
 
         pygame.display.flip()
 
-        #dt = clock.tick(60) / 1000
         dt = clock.tick(60) / 1000
 
 

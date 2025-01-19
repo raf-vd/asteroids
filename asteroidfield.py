@@ -3,7 +3,6 @@ import random
 from asteroid import LumpyAsteroid
 from constants import *
 
-
 class AsteroidField(pygame.sprite.Sprite):
     edges = [
         [
@@ -48,5 +47,4 @@ class AsteroidField(pygame.sprite.Sprite):
             velocity = velocity.rotate(random.randint(-30, 30))
             kind = random.randint(1, ASTEROID_KINDS)
             position = edge[1](random.uniform(0, 1), kind)
-            print(f"roid_-_rad * kind: {ASTEROID_MIN_RADIUS} * {kind}, postion: {position}, velocity {velocity}")
             self.spawn(ASTEROID_MIN_RADIUS * kind, position, velocity)
