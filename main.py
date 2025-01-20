@@ -92,12 +92,13 @@ def main():
         surface.fill((0, 0, 0, 0))                  # reset surface
         screen.blit(background, (0,0))              # show background
 
+        #### Revisit this to figuere out screen/surface use and conform drawing methods
         for obj in drawable:                        # draw all objects but explosions
-            if not isinstance(obj, Explosion):
-                if not isinstance(obj, Player):
-                    obj.draw(screen)
-                else:
-                    obj.draw(screen, surface)       # player needs surface as well
+            if isinstance(obj, Player) or isinstance(obj, LumpyAsteroid):
+                obj.draw(screen, surface)           # player & asteroid need surface as well
+            elif not isinstance(obj, Explosion):
+                    obj.draw(screen)                # shots remain as only with screen
+                    
         for exp in explosions:                      # draw explosions last (to be on top)
             exp.draw(screen)
 

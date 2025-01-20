@@ -13,24 +13,27 @@ class LumpyAsteroid(CircleShape):
         self.lumps = self.generate_random_lumps()
         self.score_value = 1800 / self.radius
 
-    def draw(self, screen):
+    def draw(self, screen, surface):
         self.wrap_screen(screen)
-        pygame.draw.circle(screen, self.get_colour(), self.position, self.radius, 0)
+        pygame.draw.circle(surface, self.get_colour(200), self.position, self.radius, 0)
         for lump in self.lumps:
-            pygame.draw.circle(screen, self.get_colour(), lump.position, lump.radius, 0)
+            pygame.draw.circle(surface, self.get_colour(190), lump.position, lump.radius, 0)
 
     def update(self, dt):
         self.position +=  self.velocity * dt * LumpyAsteroid.velocity_multiplier
         for lump in self.lumps:
             lump.position +=  self.velocity * dt * LumpyAsteroid.velocity_multiplier
 
-    def get_colour(self):
+    def get_colour(self, transparency=255):
         if self.radius == ASTEROID_MAX_RADIUS:
-            return "yellow"
+            # return "yellow"
+            return (255, 255, 0, transparency)
         elif self.radius > ASTEROID_MIN_RADIUS:
-            return "orange"
+            # return "orange"
+            return (255, 128, 0, transparency)
         else:
-            return "red"
+            # return "red"
+            return (255, 0, 0, transparency)
 
     def generate_random_lumps(self):
         num_lumps = random.randint(3, 6)

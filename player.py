@@ -20,9 +20,8 @@ class Player(CircleShape):
         self.shield_charge = 10             # start with 10 shieldcharge
         self.shield_regeneration = 0
         self.non_hit_scoring_streak = 0
-
-    #  calculate a triangle for player
-    def triangle(self):
+    
+    def triangle(self):                 # calculate a triangle for player
         forward = pygame.Vector2(0, 1).rotate(self.rotation)
         right = pygame.Vector2(0, 1).rotate(self.rotation + 90) * self.radius / 1.5
         a = self.position + forward * self.radius * 1.25 # 25% correction on point a location to appear "better centered"
@@ -30,24 +29,20 @@ class Player(CircleShape):
         c = self.position - forward * self.radius + right
         return [a, b, c]
 
-    # override draw from CircleShape
-    def draw(self, screen, surface):
+    def draw(self, screen, surface):    # override draw from CircleShape
         self.wrap_screen(screen)
         pygame.draw.polygon(screen, self.colour, self.triangle(), 2)
-        if self.shield_charge > 0:
+        if int(self.shield_charge) > 0:
             pygame.draw.circle(surface, (150, 250, 150, 50), self.position, self.radius + 10 + int(self.shield_charge), int(self.shield_charge))
-
-    # rotate the player (left, right)
-    def rotate(self, dt):
+    
+    def rotate(self, dt):               # rotate the player (left, right)
         self.rotation += PLAYER_TURN_SPEED * dt
-
-    # move the player (forward, back)
-    def move(self, dt):
+    
+    def move(self, dt):                 # move the player (forward, back)
         forward = pygame.Vector2(0, 1).rotate(self.rotation)
         self.position += forward * PLAYER_SPEED * dt 
-
-    # process inputs from keys
-    def update(self, dt):
+    
+    def update(self, dt):               # process inputs from keys and do all sorts of changes to player
 
         self.shoot_timer -= dt
         if self.spawn_guard < PLAYER_SPAWN_SAFEGUARD * 0.2: # return to fighting color at 80% of spawn_guard has passed so player gets to safety asap
