@@ -2,7 +2,7 @@ import pygame
 import random
 import math
 from constants import *
-from resources import crack_lump, crack_main
+from resources import crack_lump, crack_main, screen
 from circleshape import CircleShape
 from explosion import Explosion
 
@@ -13,8 +13,8 @@ class LumpyAsteroid(CircleShape):
         self.lumps = self.generate_random_lumps()
         self.score_value = 1800 / self.radius
 
-    def draw(self, screen, surface):
-        self.wrap_screen(screen)
+    def draw(self, surface):
+        self.wrap_screen()
         pygame.draw.circle(surface, self.get_colour(200), self.position, self.radius, 0)
         for lump in self.lumps:
             pygame.draw.circle(surface, self.get_colour(190), lump.position, lump.radius, 0)
@@ -86,13 +86,13 @@ class LumpyAsteroid(CircleShape):
                 return self.lumps.index(lump)
         return -2
 
-    def wrap_screen(self, screen):
+    def wrap_screen(self):
         # Store original position
         old_x = self.position.x
         old_y = self.position.y
 
         # Wrap main body
-        super().wrap_screen(screen)
+        super().wrap_screen()
         
         # If position changed, update all lumps by the same amount
         if old_x != self.position.x or old_y != self.position.y:

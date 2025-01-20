@@ -1,8 +1,9 @@
 import pygame
 from constants import *
-from resources import player_death_sound
+from resources import player_death_sound, player_explosion_frames, screen
 from circleshape import CircleShape
 from shot import Shot
+from explosion import Explosion
 from functions import point_in_triangle, point_to_line_distance
 
 # Class to handle the player
@@ -12,6 +13,7 @@ class Player(CircleShape):
         self.__upgrade_key_cooldown_timer = 0
         self.__upgrade_countdown_piercing = 0
         self.__upgrade_countdown_bulletsize = 0
+        self.__respawn_countdown = 0
         self.rotation = 0
         self.shoot_timer = 0
         self.spawn_guard = PLAYER_SPAWN_SAFEGUARD
@@ -21,7 +23,7 @@ class Player(CircleShape):
         self.shield_regeneration = 0
         self.non_hit_scoring_streak = 0
     
-    def triangle(self):                 # calculate a triangle for player
+    def triangle(self):                     # calculate a triangle for player
         forward = pygame.Vector2(0, 1).rotate(self.rotation)
         right = pygame.Vector2(0, 1).rotate(self.rotation + 90) * self.radius / 1.5
         a = self.position + forward * self.radius * 1.25 # 25% correction on point a location to appear "better centered"
@@ -29,23 +31,29 @@ class Player(CircleShape):
         c = self.position - forward * self.radius + right
         return [a, b, c]
 
-    def draw(self, screen, surface):    # override draw from CircleShape
-        self.wrap_screen(screen)
+    def draw(self, surface):                # override draw from CircleShape
+        if self.__respawn_countdown > 0:    # Don't show player while respawn cooldown is active
+            return False                
+        self.wrap_screen()
         pygame.draw.polygon(screen, self.colour, self.triangle(), 2)
         if int(self.shield_charge) > 0:
             pygame.draw.circle(surface, (150, 250, 150, 50), self.position, self.radius + 10 + int(self.shield_charge), int(self.shield_charge))
     
-    def rotate(self, dt):               # rotate the player (left, right)
+    def rotate(self, dt):                   # rotate the player (left, right)
         self.rotation += PLAYER_TURN_SPEED * dt
     
-    def move(self, dt):                 # move the player (forward, back)
+    def move(self, dt):                     # move the player (forward, back)
         forward = pygame.Vector2(0, 1).rotate(self.rotation)
         self.position += forward * PLAYER_SPEED * dt 
     
-    def update(self, dt):               # process inputs from keys and do all sorts of changes to player
+    def update(self, dt):                   # process inputs from keys and do all sorts of changes to player
+
+        if self.__respawn_countdown > 0:
+            self.__respawn_countdown -= dt
+            return False                # Don't do anything while respawn cooldown is active
 
         self.shoot_timer -= dt
-        if self.spawn_guard < PLAYER_SPAWN_SAFEGUARD * 0.2: # return to fighting color at 80% of spawn_guard has passed so player gets to safety asap
+        if self.spawn_guard < PLAYER_SPAWN_SAFEGUARD * 0.15: # return to fighting color at 85% of spawn_guard has passed so player gets to safety asap
             self.colour = "white"
 
         if self.spawn_guard > 0:
@@ -66,8 +74,9 @@ class Player(CircleShape):
             self.activate_upgrade("SMALLER_SHOT")
 
         if self.non_hit_scoring_streak > PLAYER_MIN_SCORE_STREAK:  # you need to have a minimal scoring streak to have any shield regeneration
-            if self.shield_regeneration < 2.5:
-                self.shield_regeneration = self.non_hit_scoring_streak / 10000
+            if self.shield_regeneration < 2.0:                                                                  # Hardcap shieldregen
+                self.shield_regeneration = (self.non_hit_scoring_streak / 100) * (1 / (self.shield_charge*3 +1)) # Shield regen lowers when more shield is active
+
             self.activate_upgrade("INCREASE_SHIELD", self.shield_regeneration)
 
         keys = pygame.key.get_pressed()
@@ -166,23 +175,20 @@ class Player(CircleShape):
 
     def collides(self, target):
         # disable collision for PLAYER_SPAWN_SAFEGUARD seconds after spawning
-        if self.spawn_guard > 0: 
-            return False
+        # (this will also safeguard player during respawn cooldown)
+        if self.spawn_guard > 0:                                    # Prevent colision while recently reswpawned
+            return False                       
         
-        if self.check_collision(target):
-            player_death_sound.play()
-            self.lives -= 1
-            if self.lives == 0:
-                return True                             # Player died => don't respawn
-            self.colour = "green"                       # Change player color to show he is invulnerable for now
-            self.spawn_guard = PLAYER_SPAWN_SAFEGUARD
-            self.position.x = SCREEN_WIDTH / 2
-            self.position.y = SCREEN_HEIGHT / 2
-            self.non_hit_scoring_streak = 0             # dying resets scoring streak
-            self.shield_regeneration = 0                # dying resets shield regeneration rate
-            self.shield_charge = 10                     # shield inits at 10 strength when respawning
+        if self.check_collision(target): 
+            player_death_sound.play()                               # Play sound
+            self.lives -= 1                                         # Player collided, take a life awat
+            if self.lives == 0:                                     # Out of lives => game ends
+                return True                             
+            Explosion(self.position, 1, player_explosion_frames)    # Go BOOM
+            self.__respawn()                                          # Reset
             return True
-        return False
+        
+        return False                                                # No collision
     
     def activate_upgrade(self, upgrade, value=1):
         if upgrade == "PIERCING":
@@ -210,3 +216,15 @@ class Player(CircleShape):
                 self.shield_charge -= value
             else:
                 self.shield_charge = 0      # force up to 0 if somehow goes negative
+
+    def __respawn(self):                                # Reset the player and force 2s invisible/immovable/invulnerable
+        self.__respawn_countdown = 2                    # Set timer to track respawn delay
+        self.colour = "green"                           # Change player color to show he is invulnerable for now
+        self.spawn_guard = PLAYER_SPAWN_SAFEGUARD
+        self.position.x = SCREEN_WIDTH / 2
+        self.position.y = SCREEN_HEIGHT / 2
+        self.non_hit_scoring_streak = 0                 # dying resets scoring streak
+        self.shield_regeneration = 0                    # dying resets shield regeneration rate
+        self.shield_charge = 10                         # shield inits at 10 strength when respawning
+        Shot.piercing_active = False                    # End piercing after dying
+        Shot.shot_size_multiplier = 1                   # Reset bullet to minimum size after dying

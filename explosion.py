@@ -1,28 +1,16 @@
 import pygame
+from resources import explosion_frames, screen
 
 class Explosion(pygame.sprite.Sprite):
-    __animation_frames = None  # Class variable to store frames
 
-    @classmethod
-    def load_frames(cls):
-        if cls.__animation_frames is None:  # Only load if not already loaded
-            frames = []
-            for i in range(5): # load 5 instead of available 9 for shorter animation
-                frame_path = f"image/explosion/explosion{i:02d}.png"
-                frame = pygame.image.load(frame_path).convert_alpha()
-                frame = pygame.transform.scale(frame, (frame.get_width() / 4, frame.get_height() / 4))  # originals are too big, repplace by smaller ones later
-                frames.append(frame)
-            cls.__animation_frames = frames
-        return cls.__animation_frames
-
-    def __init__(self, position, shrinkfactor):
+    def __init__(self, position, shrinkfactor, frames=explosion_frames):
         if hasattr(self, "containers"):
             super().__init__(self.containers)
         else:
             super().__init__()
 
         self.__shrinkfactor = shrinkfactor
-        self.frames = self.load_frames()
+        self.frames = frames
         self.current_frame = 0
         self.image = self.frames[self.current_frame]
         self.image = self.__resize_image()
@@ -47,6 +35,6 @@ class Explosion(pygame.sprite.Sprite):
             else:
                 self.kill()  # Remove the explosion sprite when the animation ends
 
-    def draw(self, screen):
+    def draw(self):
         screen.blit(self.image, self.rect)
 

@@ -1,6 +1,6 @@
 import pygame
 from constants import *
-from resources import shot_sound
+from resources import screen, shot_sound
 from circleshape import CircleShape
 
 class Shot(CircleShape):
@@ -13,12 +13,11 @@ class Shot(CircleShape):
         shot_sound.play()
         self.pierce = Shot.piercing_active
 
-    def draw(self, screen):
-        if self.is_off_screen(screen):
+    def draw(self):
+        if self.is_off_screen():
             self.kill()
         else:
             pygame.draw.circle(screen, "lightcyan" if self.pierce else "cyan", self.position, self.radius , 0 if self.pierce else 2)
-            #pygame.draw.circle(screen, "cyan", self.position, self.radius, 2)
 
     def update(self, dt):
         self.position += self.velocity * dt

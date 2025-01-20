@@ -1,6 +1,6 @@
 import pygame
 from constants import *
-from resources import level_up_sound
+from resources import font20, font24, font36, font48, level_up_sound, screen
 from shot import Shot
 
 class ScoreBoard():
@@ -10,14 +10,28 @@ class ScoreBoard():
         self.lives = lives
         self.level = level
         self.level_score = 0
-        self.font36 = pygame.font.Font(None, 36)
-        self.font24 = pygame.font.Font(None, 24)
-        self.font20 = pygame.font.Font(None, 20)
 
-    def __draw_shield_bar(self, screen, player):
+    def __render_game_over_line(self, text, bar_surface, colour, bar_w, bar_h, vertical_offset=0):
+        text_surface = font48.render(text, True, colour)
+        text_rect = text_surface.get_rect(center=(bar_w / 2, bar_h / 2 + vertical_offset))
+        bar_surface.blit(text_surface, text_rect)
+
+    def __rect_surface(self, bar_w, bar_h, colour):
+        bar_surface = pygame.Surface((bar_w, bar_h), pygame.SRCALPHA)  
+        bar_surface.fill(colour)  
+        return bar_surface
+
+    def game_over(self):
+        bar_w, bar_h = 400, 300
+        bar_surface = self.__rect_surface(400, 300, (255, 255, 255, 100))
+        self.__render_game_over_line(f"GAME OVER", bar_surface, (255, 0, 0, 100), bar_w, bar_h)
+        self.__render_game_over_line(f"Final score: {int(self.score)}", bar_surface, (150, 255, 150, 255), bar_w, bar_h, -100)
+        self.__render_game_over_line(f"Final level: {self.level}", bar_surface, (255, 255, 255, 0), bar_w, bar_h, 100)
+        screen.blit(bar_surface, ((SCREEN_WIDTH -bar_w)/ 2, (SCREEN_HEIGHT - bar_h) / 2))
+
+    def __draw_shield_bar(self, player):
 
             # setup bar display parameters
-            font = pygame.font.Font(None, 20)  
             bar_width, bar_height = 180, 20  
             bar_x, bar_y = SCREEN_WIDTH - bar_width - 10, SCREEN_HEIGHT - bar_height - 10  # Bottom right corner with padding
 
@@ -38,15 +52,14 @@ class ScoreBoard():
                     text = f"Shield: {player.shield_charge:.1f}%"
 
             # Prepare a surface for the bar
-            bar_surface = pygame.Surface((bar_width, bar_height), pygame.SRCALPHA)  # Use SRCALPHA for transparency
-            bar_surface.fill(bg_color)  # Fill the surface with the background color
+            bar_surface = self.__rect_surface(bar_width, bar_height, bg_color)
 
             # Render the text set color to white below 50%
             if player.shield_charge < 50:
                 text_color = (255, 255, 255)  # White
             else:
                 text_color = (0, 0, 0)
-            text_surface = font.render(text, True, text_color)
+            text_surface = font20.render(text, True, text_color)
 
             # Center the text on the bar
             text_rect = text_surface.get_rect(center=(bar_width / 2, bar_height / 2))
@@ -67,19 +80,18 @@ class ScoreBoard():
         self.level += value
         self.level_score = 0
         level_up_sound.play()
-        print(f"Level up by {value} to level {self.level}!")
 
-    def update(self, screen, player):
-        score_text = self.font36.render(f"Score: {int(self.score)}", True, "green")
-        lives_text = self.font36.render(f"Lives: {player.lives}", True, "green")
-        level_text = self.font24.render(f"Level: {self.level}", True, "white")
-        upgrades_text = self.font20.render(f"Active upgrades: {self.get_upgrades()}", True, "black", "white")
+    def update(self, player):
+        score_text = font36.render(f"Score: {int(self.score)}", True, "green")
+        lives_text = font36.render(f"Lives: {player.lives}", True, "green")
+        level_text = font24.render(f"Level: {self.level}", True, "white")
+        upgrades_text = font20.render(f"Active upgrades: {self.get_upgrades()}", True, "black", "white")
 
         screen.blit(score_text, (10, 10))
         screen.blit(lives_text, (10, 35))
         screen.blit(level_text, (10, 60))
         screen.blit(upgrades_text, (10, screen.get_height()-30))
-        self.__draw_shield_bar(screen, player)
+        self.__draw_shield_bar(player)
 
     def get_upgrades(self):
         upgrades = []

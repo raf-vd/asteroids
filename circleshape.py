@@ -1,4 +1,5 @@
 import pygame
+from resources import screen
 from constants import *
 
 # Base class for game objects
@@ -28,12 +29,12 @@ class CircleShape(pygame.sprite.Sprite):
         return distance <= self.radius + other.radius
 
     # used for killing shots
-    def is_off_screen(self, screen):
+    def is_off_screen(self):
          return (self.position.x < -ASTEROID_MAX_RADIUS or self.position.x > screen.get_width() + ASTEROID_MAX_RADIUS or
                  self.position.y < -ASTEROID_MAX_RADIUS or self.position.y > screen.get_height() + ASTEROID_MAX_RADIUS) 
     
     # basic circle off-screen wrap
-    def wrap_screen(self, screen):
+    def wrap_screen(self):
         if self.position.x < 0 - self.radius:
             self.position.x = screen.get_width() + self.radius * 0.9
         elif self.position.x > screen.get_width() + self.radius:
