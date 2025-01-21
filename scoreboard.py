@@ -5,7 +5,7 @@ from shot import Shot
 
 class ScoreBoard():
 
-    def __init__(self,  lives = 1, level = 1):
+    def __init__(self,  lives = PLAYER_STARTING_LIVES, level = 1):
         self.score = 0
         self.lives = lives
         self.level = level

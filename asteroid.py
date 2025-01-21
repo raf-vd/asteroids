@@ -2,7 +2,7 @@ import pygame
 import random
 import math
 from constants import *
-from resources import crack_lump, crack_main, screen
+from resources import crack_lump, crack_main, surface
 from circleshape import CircleShape
 from explosion import Explosion
 
@@ -12,12 +12,13 @@ class LumpyAsteroid(CircleShape):
         super().__init__(x, y, radius)
         self.lumps = self.generate_random_lumps()
         self.score_value = 1800 / self.radius
+        self.colour = self.get_colour(random.randint(190, 200))
 
-    def draw(self, surface):
+    def draw(self):
         self.wrap_screen()
-        pygame.draw.circle(surface, self.get_colour(200), self.position, self.radius, 0)
+        pygame.draw.circle(surface, self.colour, self.position, self.radius, 0)
         for lump in self.lumps:
-            pygame.draw.circle(surface, self.get_colour(190), lump.position, lump.radius, 0)
+            pygame.draw.circle(surface, lump.colour, lump.position, lump.radius, 0)
 
     def update(self, dt):
         self.position +=  self.velocity * dt * LumpyAsteroid.velocity_multiplier
@@ -27,13 +28,13 @@ class LumpyAsteroid(CircleShape):
     def get_colour(self, transparency=255):
         if self.radius == ASTEROID_MAX_RADIUS:
             # return "yellow"
-            return (255, 255, 0, transparency)
+            return (random.randint(200, 255), random.randint(200, 255), random.randint(0, 50), transparency)
         elif self.radius > ASTEROID_MIN_RADIUS:
             # return "orange"
-            return (255, 128, 0, transparency)
+            return (random.randint(200, 255), random.randint(100, 150), random.randint(0, 50), transparency)
         else:
             # return "red"
-            return (255, 0, 0, transparency)
+            return (random.randint(200,255), random.randint(0, 50), random.randint(0, 50), transparency)
 
     def generate_random_lumps(self):
         num_lumps = random.randint(3, 6)
@@ -57,6 +58,7 @@ class LumpyAsteroid(CircleShape):
 
             # create the lump
             lumps.append(CircleShape(self.position.x + dx, self.position.y + dy, lump_radius))
+            lumps[-1].colour = self.get_colour(random.randint(180, 210))
 
         # return list of lumps
         return lumps

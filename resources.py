@@ -4,18 +4,24 @@ from constants import SCREEN_HEIGHT, SCREEN_WIDTH
 # Game mechanics
 if True:
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
     clock = pygame.time.Clock()
 
 # Sound 
 if True:
     pygame.mixer.init(44100, -16, 2, 2048)
-    shot_sound = pygame.mixer.Sound("sound/shot.mp3")
+    # Sounds
     crack_lump = pygame.mixer.Sound("sound/crack.mp3")
     crack_lump.set_volume(0.2)
     crack_main = pygame.mixer.Sound("sound/explosion.mp3")
     crack_main.set_volume(0.4)
+    game_over_sound = pygame.mixer.Sound("sound/game_over.mp3")
     level_up_sound = pygame.mixer.Sound("sound/shroom_up.mp3")
     player_death_sound = pygame.mixer.Sound("sound/crash.mp3")
+    shot_sound = pygame.mixer.Sound("sound/shot.mp3")
+    # Music
+    background_music = pygame.mixer.music.load("sound/space_music.mp3")
+    pygame.mixer.music.set_volume(0.25)
 
 # Fonts
 if True:

@@ -13,6 +13,10 @@ class Shot(CircleShape):
         shot_sound.play()
         self.pierce = Shot.piercing_active
 
+    def reset_class_variables():            # Method to be able to reset Shot class variables
+        Shot.piercing_active = False
+        Shot.shot_size_multiplier = 1
+
     def draw(self):
         if self.is_off_screen():
             self.kill()
