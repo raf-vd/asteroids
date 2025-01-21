@@ -16,10 +16,13 @@ def end_game(surface, scoreboard, player):      # End game with a bang & final s
     player_explosion = Explosion(player.position, 1, player_explosion_frames)
 
     dt = 0
-    while dt < 10:                                      # 10s ending
+    # while dt < 10:                                      # 10s ending
+    while True:
         
         for event in pygame.event.get():                # make close button work
             if event.type == pygame.QUIT:
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
                 sys.exit()
 
         surface.fill((0, 0, 0, 0))                  
