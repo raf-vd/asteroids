@@ -24,9 +24,10 @@ class ScoreBoard():
     def game_over(self):
         bar_w, bar_h = 400, 300
         bar_surface = self.__rect_surface(400, 300, (255, 255, 255, 100))
-        self.__render_game_over_line(f"GAME OVER", bar_surface, (255, 0, 0, 100), bar_w, bar_h)
-        self.__render_game_over_line(f"Final score: {int(self.score)}", bar_surface, (150, 255, 150, 255), bar_w, bar_h, -100)
-        self.__render_game_over_line(f"Final level: {self.level}", bar_surface, (255, 255, 255, 0), bar_w, bar_h, 100)
+        self.__render_game_over_line(f"Final score: {int(self.score)}", bar_surface, (150, 255, 150, 255), bar_w, bar_h, -110)
+        self.__render_game_over_line(f"GAME OVER", bar_surface, (255, 0, 0, 100), bar_w, bar_h - 55)
+        self.__render_game_over_line(f"Final level: {self.level}", bar_surface, (255, 255, 255, 0), bar_w, bar_h, 45)
+        self.__render_game_over_line(f"F5 = Restart, F10 = Quit", bar_surface, (0, 0, 0, 0), bar_w, bar_h, 120)
         screen.blit(bar_surface, ((SCREEN_WIDTH -bar_w)/ 2, (SCREEN_HEIGHT - bar_h) / 2))
 
     def __draw_shield_bar(self, player):

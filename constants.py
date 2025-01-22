@@ -14,7 +14,7 @@ PLAYER_TURN_SPEED = 300
 PLAYER_SPEED = 200
 PLAYER_SPAWN_SAFEGUARD = 5 # seconds (2s is used to safeguard player while on respawn cooldown, 3 for immunity while recently respawned)
 
-PLAYER_STARTING_LIVES = 3
+PLAYER_STARTING_LIVES = 1
 PLAYER_SHOOT_SPEED = 500
 PLAYER_SHOOT_COOLDOWN = 0.4
 PLAYER_MIN_SCORE_STREAK = 50

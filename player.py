@@ -80,11 +80,10 @@ class Player(CircleShape):
             self.activate_upgrade("INCREASE_SHIELD", self.shield_regeneration)
 
         keys = pygame.key.get_pressed()
-
-        if keys[pygame.K_q]:     self.rotate(-dt)
-        if keys[pygame.K_d]:     self.rotate(dt)
-        if keys[pygame.K_z]:     self.move(dt)
-        if keys[pygame.K_s]:     self.move(-dt)
+        if keys[pygame.K_q] or keys[pygame.K_LEFT]:     self.rotate(-dt)
+        if keys[pygame.K_d] or keys[pygame.K_RIGHT]:    self.rotate(dt)
+        if keys[pygame.K_z] or keys[pygame.K_UP]:       self.move(dt)
+        if keys[pygame.K_s] or keys[pygame.K_DOWN]:     self.move(-dt)
         if keys[pygame.K_SPACE]: self.shoot()
 
         if self.__upgrade_key_cooldown_timer > 0:
