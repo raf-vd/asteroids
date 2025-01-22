@@ -2,16 +2,20 @@ import pygame
 import random
 import math
 from constants import *
-from resources import crack_lump, crack_main, surface
+from resources import crack_lump_sound, crack_main_sound, surface
 from circleshape import CircleShape
 from explosion import Explosion
 
 
 class LumpyAsteroid(CircleShape):
-    def __init__(self, x, y, radius):
+    def __init__(self, x, y, radius, special=False, max_lumps=6):
         super().__init__(x, y, radius)
-        self.lumps = self.generate_random_lumps()
-        self.score_value = 1800 / self.radius
+        self.special = special
+        self.lumps = self.generate_random_lumps(max_lumps)
+        if self.special:
+            self.score_value = 0                                # Special asteroids are smaller and have no value => nasty
+        else:
+            self.score_value = 1800 / self.radius
         self.colour = self.get_colour(random.randint(190, 200))
 
     def draw(self):
@@ -26,6 +30,9 @@ class LumpyAsteroid(CircleShape):
             lump.position +=  self.velocity * dt * LumpyAsteroid.velocity_multiplier
 
     def get_colour(self, transparency=255):
+        if self.special:
+            return (random.randint(200, 210), random.randint(0, 10), random.randint(200, 210), transparency)
+
         if self.radius == ASTEROID_MAX_RADIUS:
             # return "yellow"
             return (random.randint(200, 255), random.randint(200, 255), random.randint(0, 50), transparency)
@@ -36,8 +43,8 @@ class LumpyAsteroid(CircleShape):
             # return "red"
             return (random.randint(200,255), random.randint(0, 50), random.randint(0, 50), transparency)
 
-    def generate_random_lumps(self):
-        num_lumps = random.randint(3, 6)
+    def generate_random_lumps(self, max_lumps=6):
+        num_lumps = random.randint(3, max_lumps)
         lumps = []
 
         # base angle for even spacing of lumps
@@ -80,11 +87,11 @@ class LumpyAsteroid(CircleShape):
 
     def check_collision(self, other):
         if super().check_collision(other):
-            crack_main.play()
+            crack_main_sound.play()
             return -1
         for lump in self.lumps:
             if lump.check_collision(other):
-                crack_lump.play()
+                crack_lump_sound.play()
                 return self.lumps.index(lump)
         return -2
 

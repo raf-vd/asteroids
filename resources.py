@@ -11,13 +11,15 @@ if True:
 if True:
     pygame.mixer.init(44100, -16, 2, 2048)
     # Sounds
-    crack_lump = pygame.mixer.Sound("sound/crack.mp3")
-    crack_lump.set_volume(0.2)
-    crack_main = pygame.mixer.Sound("sound/explosion.mp3")
-    crack_main.set_volume(0.4)
+    crack_lump_sound = pygame.mixer.Sound("sound/crack.mp3")
+    crack_lump_sound.set_volume(0.2)
+    crack_main_sound = pygame.mixer.Sound("sound/explosion.mp3")
+    crack_main_sound.set_volume(0.4)
     game_over_sound = pygame.mixer.Sound("sound/game_over.mp3")
     level_up_sound = pygame.mixer.Sound("sound/shroom_up.mp3")
     player_death_sound = pygame.mixer.Sound("sound/crash.mp3")
+    shield_hit_sound = pygame.mixer.Sound("sound/buzz.mp3")
+    shield_hit_sound.set_volume(0.2)
     shot_sound = pygame.mixer.Sound("sound/shot.mp3")
     # Music
     background_music = pygame.mixer.music.load("sound/space_music.mp3")
