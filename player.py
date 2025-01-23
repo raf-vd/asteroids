@@ -1,7 +1,7 @@
 import pygame
 import random
 from constants import *
-from resources import player_death_sound, player_explosion_frames, screen, shield_hit_sound, surface
+from resources import alarm_sound, player_death_sound, player_explosion_frames, screen, shield_hit_sound, surface
 from circleshape import CircleShape
 from shot import Shot
 from explosion import Explosion
@@ -141,7 +141,11 @@ class Player(CircleShape):
         # Check for shield collision first (if shield is active)
         if self.shield_charge > 0:
             if self.shield_collides(other):
-                shield_hit_sound.play()                          # warning buzz     
+                rc = other.check_collision(self)                # Check returns -2 for miss,-1 for body hit, index of lump for lump hit                
+                if rc >= -1: alarm_sound.play()                 # Alarm sound: ship body in contact with asteroid while shielded
+                if rc > -1:  del other.lumps[rc]                # Shield destroys lumps when they hit player ship while shielded
+
+                shield_hit_sound.play()                         # warning buzz     
                 self.non_hit_scoring_streak = 0                 # hits on shield resets scoring streak
                 self.shield_regeneration * 0.9                  # hits on shield decrease regeneration rate
                 self.activate_upgrade("DECREASE_SHIELD", 1)     # reduce shieldcharge on hit

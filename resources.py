@@ -11,6 +11,7 @@ if True:
 if True:
     pygame.mixer.init(44100, -16, 2, 2048)
     # Sounds
+    alarm_sound = pygame.mixer.Sound("sound/alarm.mp3")
     crack_lump_sound = pygame.mixer.Sound("sound/crack.mp3")
     crack_lump_sound.set_volume(0.2)
     crack_main_sound = pygame.mixer.Sound("sound/explosion.mp3")
