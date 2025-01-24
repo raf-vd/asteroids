@@ -51,3 +51,5 @@ if True:
     player_image = pygame.transform.scale(player_image, (40, 55))
     explosion_frames = load_frames(9, "image/explosion/explosion", "png")
     player_explosion_frames = load_frames(25, "image/explosion/whitePuff", "png")
+    shot_frames = load_frames(9, "image/explosion/fart", "png")
+    piercing_shot_frames = load_frames(9, "image/explosion/flash", "png")
