@@ -3,7 +3,7 @@ from resources import explosion_frames, screen
 
 class Explosion(pygame.sprite.Sprite):
 
-    def __init__(self, position, shrinkfactor, frames=explosion_frames):
+    def __init__(self, position, shrinkfactor=1, frames=explosion_frames):
         if hasattr(self, "containers"):
             super().__init__(self.containers)
         else:

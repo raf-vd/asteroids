@@ -1,7 +1,8 @@
 import pygame
 import random
+import math
 from constants import *
-from resources import alarm_sound, player_death_sound, player_explosion_frames, screen, shield_hit_sound, surface
+from resources import alarm_sound, player_death_sound, player_explosion_frames, player_image, screen, shield_hit_sound, surface
 from circleshape import CircleShape
 from shot import Shot
 from explosion import Explosion
@@ -19,10 +20,11 @@ class Player(CircleShape):
         self.shoot_timer = 0
         self.spawn_guard = PLAYER_SPAWN_SAFEGUARD
         self.lives = PLAYER_STARTING_LIVES
-        self.colour = "green"
+        # self.colour = "green"
         self.shield_charge = 10             
         self.shield_regeneration = 0
         self.non_hit_scoring_streak = 0
+        self.alpha = 255
  
     def triangle(self):                     # calculate a triangle for player
         forward = pygame.Vector2(0, 1).rotate(self.rotation)
@@ -32,11 +34,17 @@ class Player(CircleShape):
         c = self.position - forward * self.radius + right
         return [a, b, c]
 
-    def draw(self):                # override draw from CircleShape
-        if self.__respawn_countdown > 0:    # Don't show player while respawn cooldown is active
+    def draw(self):                                                         # override draw from CircleShape
+        if self.__respawn_countdown > 0:                                    # Don't show player while respawn cooldown is active
             return False                
         self.wrap_screen()
-        pygame.draw.polygon(screen, self.colour, self.triangle(), 2)
+        #pygame.draw.polygon(screen, self.colour, self.triangle(), 2)       # Original version drew a triangle
+        r_img = pygame.transform.rotate(player_image, -self.rotation)       # Make sure image rotates with player
+        r_img.set_alpha(self.alpha)                                         # Handle 'invulnerable oscilation'
+        rect = r_img.get_rect()
+        rect.center = self.position  
+        screen.blit(r_img, rect)                                            # Draw the actual image
+
         if int(self.shield_charge) > 0:
             # Fluctuate shield transparancy for nice visual effect
             pygame.draw.circle(surface, (150, 250, 150, random.randint(20, 80)), self.position, self.radius + 10 + int(self.shield_charge), int(self.shield_charge))
@@ -67,11 +75,15 @@ class Player(CircleShape):
             return False                # Don't do anything while respawn cooldown is active
 
         self.shoot_timer -= dt
-        if self.spawn_guard < PLAYER_SPAWN_SAFEGUARD * 0.15: # return to fighting color at 85% of spawn_guard has passed so player gets to safety asap
-            self.colour = "white"
+        
+        # if self.spawn_guard < PLAYER_SPAWN_SAFEGUARD * 0.15: # return to fighting color at 85% of spawn_guard has passed so player gets to safety asap
+        #     self.colour = "white"
 
         if self.spawn_guard > 0:
+            self.alpha = 75 + int(125 * (math.sin(pygame.time.get_ticks() / 200) + 1) / 2)
             self.spawn_guard -= dt
+        else:
+            self.alpha = 255
 
         if self.__upgrade_key_cooldown_timer > 0:
             self.__upgrade_key_cooldown_timer -= dt
@@ -254,7 +266,7 @@ class Player(CircleShape):
         self.rotation = 0
         self.position = position
         self.velocity = pygame.Vector2(0, 0)
-        self.colour = "green"                               # Change player color to show he is invulnerable for now
+        # self.colour = "green"                               # Change player color to show he is invulnerable for now
         self.lives = remaining_lives                    
         self.non_hit_scoring_streak = 0                     # dying resets scoring streak
         self.shield_regeneration = 0                        # dying resets shield regeneration rate

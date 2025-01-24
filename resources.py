@@ -12,6 +12,7 @@ if True:
     pygame.mixer.init(44100, -16, 2, 2048)
     # Sounds
     alarm_sound = pygame.mixer.Sound("sound/alarm.mp3")
+    alarm_sound.set_volume(0.5)
     crack_lump_sound = pygame.mixer.Sound("sound/crack.mp3")
     crack_lump_sound.set_volume(0.2)
     crack_main_sound = pygame.mixer.Sound("sound/explosion.mp3")
@@ -46,5 +47,7 @@ if True:
         return frames
     
     background = pygame.image.load("image/space.jpg")
+    player_image = pygame.image.load("image/ship.png").convert_alpha()
+    player_image = pygame.transform.scale(player_image, (40, 55))
     explosion_frames = load_frames(9, "image/explosion/explosion", "png")
     player_explosion_frames = load_frames(25, "image/explosion/whitePuff", "png")
