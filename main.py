@@ -1,6 +1,5 @@
 import pygame
 import sys
-import os
 from constants import *
 from resources import clock, background, game_over_sound, player_explosion_frames, screen, surface
 from explosion import Explosion
@@ -152,6 +151,9 @@ def main():
     AsteroidField.containers = updatable
     Shot.containers = (shots, updatable, drawable)
     Explosion.containers = (explosions, updatable, drawable)
+
+    # Start menu
+    # Have an initial loop here to display starting screen with menu and keybinds
 
     start_new_game = True
     while start_new_game:                                                                        
