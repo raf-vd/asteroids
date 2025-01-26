@@ -53,8 +53,10 @@ if True:
 # Fonts
 if True:
     pygame.font.init()
+    font64 = pygame.font.Font(None, 64)  
     font48 = pygame.font.Font(None, 48)  
     font36 = pygame.font.Font(None, 36)
+    font32 = pygame.font.Font(None, 32)
     font24 = pygame.font.Font(None, 24)
     font20 = pygame.font.Font(None, 20)
 

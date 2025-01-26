@@ -2,12 +2,14 @@ import pygame
 import sys
 from constants import *
 from resources import clock, background, game_over_sound, player_explosion_frames, screen, surface
+from functions import exit_msg
 from explosion import Explosion
 from scoreboard import ScoreBoard
 from player import Player
 from asteroid import LumpyAsteroid
 from asteroidfield import AsteroidField
 from shot import Shot
+from menu import Menu
 
 def game_over_screen(scoreboard, player):                                       # End game with a bang & final scores
 
@@ -18,11 +20,8 @@ def game_over_screen(scoreboard, player):                                       
     while True:                                                                 # Display final score untill player choice
         
         for event in pygame.event.get():                
-            if event.type == pygame.QUIT: return False                          # make close button work
-            if event.type == pygame.KEYDOWN:
-                keys = pygame.key.get_pressed()
-                if keys[pygame.K_F5]:  return True                              # F5  = Restart game
-                if keys[pygame.K_F10]: return False                             # F10 = Exit game (same as x-button)
+            if event.type == pygame.QUIT: exit_msg()                            # Game killed with x on window
+            if event.type == pygame.KEYDOWN: return True                        # Return to main menu
 
         clear_screen()             
         player_explosion.update(dt)
@@ -32,10 +31,6 @@ def game_over_screen(scoreboard, player):                                       
         scoreboard.game_over()                                                  # Show final score
         pygame.display.flip()
         dt += clock.tick(30)/1000
-
-def exit_msg():
-    print("Asteroids ended!")                           # Th-Th-That's it folks!
-    sys.exit()
 
 def update_objects(updatable, dt):
     for obj in updatable: 
@@ -64,11 +59,11 @@ def refresh_screen(player, scoreboard):
 
 def game_mechanics(asteroidfield, asteroids, shots, player, scoreboard):
 
-    game_over, start_new_game = False, False                                # Init game flow variables
+    game_over =  False                                                      # Init game flow variables
 
     for obj in asteroids:
 
-        if game_over: return game_over, start_new_game                      # Abort loop when game has ended
+        if game_over: return game_over                                     # Abort loop when game has ended
 
         for bullet in shots:                                                # SHOT HIT DETECTION
 
@@ -95,31 +90,31 @@ def game_mechanics(asteroidfield, asteroids, shots, player, scoreboard):
 
         if player.collides(obj):                                            # PLAYER COLLISION DETECTION
             if player.lives < 1:                                            
-                game_over = True                                            # Track that game is over
-                start_new_game = game_over_screen(scoreboard, player)       # Show endscore (receive newgame variable)
+                game_over = game_over_screen(scoreboard, player)            # Show endscore, track that game is over
 
-    return game_over, start_new_game                                        # Pass on game flow variables
+    return game_over                                                        # Pass on game flow variables
 
 def game_loop(asteroidfield, drawable, updatable, asteroids, shots, player, scoreboard):
-
-    dt = 0                                                                                  # Inits
-    game_over = False
+    dt = 0                                                                                      # Inits
+    game_running = True         
     
-    while not game_over:
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT: exit_msg()                                                        # Catch screen close button
+    while game_running:
+        for event in pygame.event.get():                                                        # Catch screen close button
+            if event.type == pygame.QUIT:
+                exit_msg()                                                                      # Forced quit by x on window
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:                   # Allow menu access in the game loop
+                return 'PAUSE'
             
-        update_objects(updatable, dt)                                                                       # Recalculate all objects in updatable group
-        game_over, start_new_game = game_mechanics(asteroidfield, asteroids, shots, player, scoreboard)     # Perform actual game mechaniscs
+        update_objects(updatable, dt)                                                           # Recalculate all objects in updatable group
+        game_over = game_mechanics(asteroidfield, asteroids, shots, player, scoreboard)         # Perform actual game mechaniscs
         
-        if not game_over:                                                                                   # Game ended, abort loop
-            clear_screen()                                                                                  # Drawing section
-            draw_objects(drawable)
-            refresh_screen(player, scoreboard)
-            dt = clock.tick(60) / 1000                                                                      # "Advance time"
-
-    return start_new_game
+        if game_over:                                                                           # Game over => back to menu
+            return 'MENU'
+            
+        clear_screen()                                                                          # Drawing section
+        draw_objects(drawable)
+        refresh_screen(player, scoreboard)
+        dt = clock.tick(60) / 1000                                                              # Game speed control
 
 def init_game():                                                # Initialise base game objects
     asteroidfield = AsteroidField()                                                             
@@ -152,17 +147,56 @@ def main():
     Shot.containers = (shots, updatable, drawable)
     Explosion.containers = (explosions, updatable, drawable)
 
-    # Start menu
-    # Have an initial loop here to display starting screen with menu and keybinds
+    main_menu = Menu.create_main_menu()                                                         # Create menu
+    controls_menu = Menu.create_controls_menu()                                                 # Create submenu
+    
+    game_state = "MENU"                                                                         # Init variables
+    asteroidfield = None
+    player = None
+    scoreboard = None
+    
+    while True:        
+        
+        if game_state == "PAUSE":
+            pause = True
+            game_state = "MENU"
+        else:
+            pause = False
 
-    start_new_game = True
-    while start_new_game:                                                                        
-        asteroidfield, player, scoreboard = init_game()                                         # crucial variables initialisation
-        start_new_game = game_loop(asteroidfield, drawable, updatable, 
-                                   asteroids, shots, player, scoreboard)                        # Start game loop
-        cleanup_game(updatable, scoreboard)
+        if game_state == "MENU":
+            if not pause:                                                                       # If we're coming from a game that ended, clean up
+                cleanup_game(updatable, scoreboard)
+                asteroidfield = None                                                            # Set everything to None to ensure we are ready for a new game
+                player = None
+                scoreboard = None
 
-    exit_msg()                                                                                  # Game over, no restart requested
+            main_menu = Menu.create_main_menu(pause)                                            # Show 'resume' in menu if paused, else show 'new game'
+            action = main_menu.handle_menu_loop(screen)
+            
+            if action == "start":                                                               # Evaluate action chosen in menu
+                asteroidfield, player, scoreboard = init_game()
+                game_state = "GAME"
+            elif action == "resume":
+                game_state = "GAME"
+            elif action == "controls":
+                game_state = "CONTROLS"
+            elif action == "quit":
+                if player is not None:                                                          # Clean up if quitting during a game
+                    cleanup_game(updatable, scoreboard)
+                break                                                                           # Exit loop when quit was chosen
+
+        elif game_state == "CONTROLS":                                                          # Submenu handling
+            action = controls_menu.handle_menu_loop(screen)
+            if action == "back":
+                if pause:
+                    game_state = "PAUSE"
+                else:
+                    game_state = "MENU"
+                
+        elif game_state == "GAME":                                                              # Run the actual gameloop
+            game_state = game_loop(asteroidfield, drawable, updatable, asteroids, shots, player, scoreboard)
+
+    exit_msg()                                                                                  # Close the program with a final message
 
 # Start program
 if __name__ == "__main__":

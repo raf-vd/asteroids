@@ -1,3 +1,5 @@
+import sys
+
 def point_to_line_distance(point, line_start, line_end):
     """Calculate shortest distance from a point to a line segment (THX BOOTS)"""
     line_vec = line_end - line_start    # Vector from line start to end
@@ -31,3 +33,6 @@ def point_in_triangle(point, triangle_points):
     
     return not (has_neg and has_pos)
 
+def exit_msg():
+    print("Asteroids ended!")                           # Th-Th-That's it folks!
+    sys.exit()
