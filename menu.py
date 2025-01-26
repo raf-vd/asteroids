@@ -1,6 +1,6 @@
 import pygame
 import sys
-from resources import font32, font64
+from resources import background, font32, font64, surface
 from functions import exit_msg
 
 class Menu:
@@ -30,11 +30,15 @@ class Menu:
             pygame.display.flip()
 
     def draw_menu(self, screen):
-        screen.fill((0, 0, 0))                                                                  # Clear screen with black background
-                
+        # First, ensure the game is still visible
+        screen.blit(background, (0,0))
+        screen.blit(surface, (0,0))  # This shows your game objects        
+
+        menu_surface = pygame.Surface(screen.get_size(), pygame.SRCALPHA)                       # Create a surface for the menu to be drawn upon
+        menu_surface.fill((0, 0, 0, 128))                                                       # Fill surface with transparent 50£ transaprent black
         title_surface = self.title_font.render(self.title, True, (255, 255, 255))               # Render title (full white)
         title_rect = title_surface.get_rect(center=(screen.get_width() // 2, 100))              # Create title surface, x:centre of screen, 100 pixels from top
-        screen.blit(title_surface, title_rect)                                                  # Blit title to screen
+        menu_surface.blit(title_surface, title_rect)                                            # Blit title to menu surface
         
         # Draw options
         option_y = 250                                                                          # Starting y position for first option
@@ -42,8 +46,10 @@ class Menu:
             color = (255, 255, 0) if i == self.current_selection else (255, 255, 255)           # Highlight selected option
             option_surface = self.option_font.render(option_text, True, color)                  # Render the option text
             option_rect = option_surface.get_rect(center=(screen.get_width() // 2, option_y))   # Create option surface, x:centre of screen, 250+i*50 pixels from top
-            screen.blit(option_surface, option_rect)                                            # Blit option to screen
+            menu_surface.blit(option_surface, option_rect)                                      # Blit option to the menu surface
             option_y += 50                                                                      # Space between options                                             
+
+        screen.blit(menu_surface, (0, 0))                                                       # Blit the complete menu to the screen
 
     @classmethod
     def create_main_menu(cls, is_game_paused=False):

@@ -1,6 +1,6 @@
 import pygame
 from constants import *
-from resources import font20, font24, font36, font48, level_up_sound, screen
+from resources import font20, font24, font36, font48, game_sounds, level_up_sound, screen
 from shot import Shot
 
 class ScoreBoard():
@@ -11,8 +11,8 @@ class ScoreBoard():
         self.level = level
         self.level_score = 0
 
-    def __render_game_over_line(self, text, bar_surface, colour, bar_w, bar_h, vertical_offset=0):
-        text_surface = font48.render(text, True, colour)
+    def __render_game_over_line(self, font, text, bar_surface, colour, bar_w, bar_h, vertical_offset=0):
+        text_surface = font.render(text, True, colour)
         text_rect = text_surface.get_rect(center=(bar_w / 2, bar_h / 2 + vertical_offset))
         bar_surface.blit(text_surface, text_rect)
 
@@ -24,10 +24,10 @@ class ScoreBoard():
     def game_over(self):
         bar_w, bar_h = 400, 300
         bar_surface = self.__rect_surface(400, 300, (255, 255, 255, 100))
-        self.__render_game_over_line(f"Final score: {int(self.score)}", bar_surface, (150, 255, 150, 255), bar_w, bar_h, -110)
-        self.__render_game_over_line(f"GAME OVER", bar_surface, (255, 0, 0, 100), bar_w, bar_h - 55)
-        self.__render_game_over_line(f"Final level: {self.level}", bar_surface, (255, 255, 255, 0), bar_w, bar_h, 45)
-        self.__render_game_over_line(f"Press any key to continue", bar_surface, (0, 0, 0, 0), bar_w, bar_h, 120)
+        self.__render_game_over_line(font48, f"Final score: {int(self.score)}", bar_surface, (150, 255, 150, 255), bar_w, bar_h, -110)
+        self.__render_game_over_line(font48, f"GAME OVER", bar_surface, (255, 0, 0, 100), bar_w, bar_h - 55)
+        self.__render_game_over_line(font48, f"Final level: {self.level}", bar_surface, (255, 255, 255, 0), bar_w, bar_h, 45)
+        self.__render_game_over_line(font36, f"Press any key to continue", bar_surface, (0, 0, 0, 0), bar_w, bar_h, 120)
         screen.blit(bar_surface, ((SCREEN_WIDTH -bar_w)/ 2, (SCREEN_HEIGHT - bar_h) / 2))
 
     def __draw_shield_bar(self, player):
@@ -80,7 +80,8 @@ class ScoreBoard():
     def __level_up(self, value = 1):
         self.level += value
         self.level_score = 0
-        level_up_sound.play()
+        if game_sounds.get_busy: game_sounds.stop()
+        game_sounds.play(level_up_sound)
 
     def update(self, player):
         score_text = font36.render(f"Score: {int(self.score)}", True, "green")

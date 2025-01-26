@@ -1,6 +1,6 @@
 import pygame
 from constants import *
-from resources import screen, piercing_shot_frames, shot_frames, shot_sound
+from resources import screen, piercing_shot_frames, shot_frames, shot_channel, shot_sound
 from circleshape import CircleShape
 
 class Shot(CircleShape):
@@ -10,7 +10,8 @@ class Shot(CircleShape):
 
     def __init__(self, x, y, frames=shot_frames):
         super().__init__(x, y, SHOT_RADIUS * Shot.shot_size_multiplier)
-        shot_sound.play()
+        if shot_channel.get_busy: shot_sound.stop()
+        shot_channel.play(shot_sound)
         self.pierce = Shot.piercing_active
         self.frames = frames
         self.current_frame = 0

@@ -2,7 +2,7 @@ import pygame
 import random
 import math
 from constants import *
-from resources import crack_lump_sound, crack_main_sound, surface
+from resources import asteroid_break_channel, crack_lump_sound, crack_main_sound, surface
 from circleshape import CircleShape
 from explosion import Explosion
 
@@ -86,12 +86,13 @@ class LumpyAsteroid(CircleShape):
         return True #asteroid split
 
     def check_collision(self, other):
+        # Note: allow for overlapping sounds, destruction sounds are just cool!
         if super().check_collision(other):
-            crack_main_sound.play()
+            asteroid_break_channel.play(crack_main_sound)
             return -1
         for lump in self.lumps:
             if lump.check_collision(other):
-                crack_lump_sound.play()
+                asteroid_break_channel.play(crack_lump_sound)
                 return self.lumps.index(lump)
         return -2
 

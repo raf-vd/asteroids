@@ -2,7 +2,7 @@ import pygame
 import random
 import math
 from constants import *
-from resources import alarm_sound, player_death_sound, player_explosion_frames, player_image, screen, shield_hit_sound, surface
+from resources import alert_channel, alert_sound, player_death_sound, player_explosion_frames, player_image, shield_channel, shield_hit_sound, surface
 from circleshape import CircleShape
 from shot import Shot
 from explosion import Explosion
@@ -20,8 +20,7 @@ class Player(CircleShape):
         self.shoot_timer = 0
         self.spawn_guard = PLAYER_SPAWN_SAFEGUARD
         self.lives = PLAYER_STARTING_LIVES
-        # self.colour = "green"
-        self.shield_charge = 10             
+        self.shield_charge = PLAYER_STARTING_SHIELD
         self.shield_regeneration = 0
         self.non_hit_scoring_streak = 0
         self.alpha = 255
@@ -43,7 +42,7 @@ class Player(CircleShape):
         r_img.set_alpha(self.alpha)                                         # Handle 'invulnerable oscilation'
         rect = r_img.get_rect()
         rect.center = self.position  
-        screen.blit(r_img, rect)                                            # Draw the actual image
+        surface.blit(r_img, rect)                                            # Draw the actual image
 
         if int(self.shield_charge) > 0:
             # Fluctuate shield transparancy for nice visual effect
@@ -153,15 +152,23 @@ class Player(CircleShape):
         # Check for shield collision first (if shield is active)
         if self.shield_charge > 0:
             if self.shield_collides(other):
-                rc = other.check_collision(self)                # Check returns -2 for miss,-1 for body hit, index of lump for lump hit                
-                if rc >= -1: alarm_sound.play()                 # Alarm sound: ship body in contact with asteroid while shielded
-                if rc > -1:  del other.lumps[rc]                # Shield destroys lumps when they hit player ship while shielded
 
-                shield_hit_sound.play()                         # warning buzz     
-                self.non_hit_scoring_streak = 0                 # hits on shield resets scoring streak
-                self.shield_regeneration * 0.9                  # hits on shield decrease regeneration rate
-                self.activate_upgrade("DECREASE_SHIELD", 1)     # reduce shieldcharge on hit
-                return False                                    # return False prevent hits from hitting player while shielded
+                rc = other.check_collision(self)                            # Check returns -2 for miss,-1 for body hit, index of lump for lump hit                
+                if rc >= -1: 
+                    if shield_channel.get_busy(): shield_channel.stop()     # Quiet shield on emminent danger
+                    if not alert_channel.get_busy():                        # Prevent sound overlap
+                        alert_channel.play(alert_sound)                     # Alarm sound: ship body in contact with asteroid while shielded
+
+                if rc > -1:  del other.lumps[rc]                            # Shield destroys lumps when they hit player ship while shielded
+
+                if not alert_channel.get_busy():                            # Don't play shield buzz when alert is playing
+                    if not shield_channel.get_busy():                       # Avoid overlapping same sound multiple times
+                        shield_channel.play(shield_hit_sound)               # warning buzz
+
+                self.non_hit_scoring_streak = 0                             # hits on shield resets scoring streak
+                self.shield_regeneration * 0.9                              # hits on shield decrease regeneration rate
+                self.activate_upgrade("DECREASE_SHIELD", 1)                 # reduce shieldcharge on hit
+                return False                                                # return False prevent hits from hitting player while shielded
 
         # Broad check: circular player outside mainradius + lumpradius
         if self.position.distance_to(other.position) > self.radius + other.radius * (1 + ASTEROID_MAX_LUMP_SIZE):
@@ -218,7 +225,8 @@ class Player(CircleShape):
             return False                       
         
         if self.check_collision(target): 
-            player_death_sound.play()                                                           # Play sound
+            if alert_channel.get_busy(): alert_channel.stop()                                   # Stop whatever the channel is playing
+            alert_channel.play(player_death_sound)                                              # Play crash sound
             self.lives -= 1                                                                     # Player collided, take a life awat
             if self.lives == 0:                                                                 # Out of lives => game ends
                 return True                             
@@ -266,9 +274,8 @@ class Player(CircleShape):
         self.rotation = 0
         self.position = position
         self.velocity = pygame.Vector2(0, 0)
-        # self.colour = "green"                               # Change player color to show he is invulnerable for now
         self.lives = remaining_lives                    
         self.non_hit_scoring_streak = 0                     # dying resets scoring streak
         self.shield_regeneration = 0                        # dying resets shield regeneration rate
-        self.shield_charge = 10                             # shield inits at 10 strength when respawning
+        self.shield_charge = PLAYER_STARTING_SHIELD         # shield inits at 10 strength when respawning
         self.shoot_timer = 0

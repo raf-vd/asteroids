@@ -19,21 +19,26 @@ if True:
 # Sound 
 if True:
     pygame.mixer.init(44100, -16, 2, 2048)
+    alert_channel = pygame.mixer.Channel(1)
+    shield_channel = pygame.mixer.Channel(2)
+    shot_channel = pygame.mixer.Channel(3)
+    asteroid_break_channel = pygame.mixer.Channel(4)
+    game_sounds = pygame.mixer.Channel(5)
     # Sounds
   # relative location
-    alarm_sound_path = resource_path("sound/alarm.mp3")
-    crack_lump_sound_path = resource_path("sound/crack.mp3")
+    alert_sound_path = resource_path("sound/alarm.mp3")
+    crack_lump_sound_path = resource_path("sound/crack.wav")
     crack_main_sound_path = resource_path("sound/explosion.mp3")
     game_over_sound_path = resource_path("sound/game_over.mp3")
     level_up_sound_path = resource_path("sound/shroom_up.mp3")
     player_death_sound_path = resource_path("sound/crash.mp3")
     shield_hit_sound_path = resource_path("sound/buzz.mp3")
-    shot_sound_path = resource_path("sound/shot.mp3")
+    shot_sound_path = resource_path("sound/shot.wav")
     # Music
     background_music = resource_path("sound/space_music.mp3")
 
   # dynamic pathing
-    alarm_sound = pygame.mixer.Sound(alarm_sound_path) 
+    alert_sound = pygame.mixer.Sound(alert_sound_path) 
     crack_lump_sound = pygame.mixer.Sound(crack_lump_sound_path)
     crack_main_sound = pygame.mixer.Sound(crack_main_sound_path)
     game_over_sound = pygame.mixer.Sound(game_over_sound_path)
@@ -44,10 +49,10 @@ if True:
     # Music
     background_music = pygame.mixer.music.load(background_music)
   # Volume control  
-    alarm_sound.set_volume(0.5)
-    crack_lump_sound.set_volume(0.2)
-    crack_main_sound.set_volume(0.4)
-    shield_hit_sound.set_volume(0.2)
+    alert_sound.set_volume(0.5)
+    crack_lump_sound.set_volume(0.3)
+    crack_main_sound.set_volume(0.6)
+    shot_sound.set_volume(0.2)
     pygame.mixer.music.set_volume(0.25)
 
 # Fonts

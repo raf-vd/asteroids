@@ -1,7 +1,7 @@
 import pygame
 import sys
 from constants import *
-from resources import clock, background, game_over_sound, player_explosion_frames, screen, surface
+from resources import background, clock, game_over_sound, game_sounds, player_explosion_frames, screen, surface
 from functions import exit_msg
 from explosion import Explosion
 from scoreboard import ScoreBoard
@@ -13,7 +13,8 @@ from menu import Menu
 
 def game_over_screen(scoreboard, player):                                       # End game with a bang & final scores
 
-    game_over_sound.play()                                                   # BANG
+    if game_sounds.get_busy(): game_sounds.stop()
+    game_over_sound.play()                                                      # BANG
     player_explosion = Explosion(player.position, 1, player_explosion_frames)
 
     dt = 0
@@ -49,8 +50,8 @@ def draw_objects(drawable):
             exp.draw()
 
 def clear_screen():
-    surface.fill((0, 0, 0, 0))                      # reset surface
-    screen.blit(background, (0,0))                  # show background
+    surface.fill((0, 0, 0, 0))                          # reset surface
+    screen.blit(background, (0,0))                      # show background
 
 def refresh_screen(player, scoreboard):
     scoreboard.update(player)                           # Scoreboard updated (and drawn) on top of all
@@ -95,10 +96,9 @@ def game_mechanics(asteroidfield, asteroids, shots, player, scoreboard):
     return game_over                                                        # Pass on game flow variables
 
 def game_loop(asteroidfield, drawable, updatable, asteroids, shots, player, scoreboard):
-    dt = 0                                                                                      # Inits
-    game_running = True         
-    
-    while game_running:
+    dt = 0                                                                                      # Init
+    clock.tick()                                                                                # Reset the clock's time delta
+    while True:
         for event in pygame.event.get():                                                        # Catch screen close button
             if event.type == pygame.QUIT:
                 exit_msg()                                                                      # Forced quit by x on window
@@ -151,47 +151,44 @@ def main():
     controls_menu = Menu.create_controls_menu()                                                 # Create submenu
     
     game_state = "MENU"                                                                         # Init variables
+    game_paused = False
     asteroidfield = None
     player = None
     scoreboard = None
     
     while True:        
         
-        if game_state == "PAUSE":
-            pause = True
-            game_state = "MENU"
-        else:
-            pause = False
+        if game_state =="PAUSE":                                                                # Handle paused state before anything
+            game_paused = True                                                                  # Set pause tracker
+            game_state = "MENU"                                                                 # Continue with menu now that pause is tracked
 
         if game_state == "MENU":
-            if not pause:                                                                       # If we're coming from a game that ended, clean up
+            if not game_paused:                                                                 # If we're coming from a game that ended, clean up
                 cleanup_game(updatable, scoreboard)
                 asteroidfield = None                                                            # Set everything to None to ensure we are ready for a new game
                 player = None
                 scoreboard = None
 
-            main_menu = Menu.create_main_menu(pause)                                            # Show 'resume' in menu if paused, else show 'new game'
+            main_menu = Menu.create_main_menu(game_paused)                                      # Show 'resume' in menu if paused, else show 'new game'
             action = main_menu.handle_menu_loop(screen)
             
             if action == "start":                                                               # Evaluate action chosen in menu
                 asteroidfield, player, scoreboard = init_game()
                 game_state = "GAME"
+                game_paused = False
             elif action == "resume":
                 game_state = "GAME"
+                game_paused = False
             elif action == "controls":
                 game_state = "CONTROLS"
             elif action == "quit":
-                if player is not None:                                                          # Clean up if quitting during a game
-                    cleanup_game(updatable, scoreboard)
+                cleanup_game(updatable, scoreboard)                                             # Cleanup vars before quitting
                 break                                                                           # Exit loop when quit was chosen
 
         elif game_state == "CONTROLS":                                                          # Submenu handling
             action = controls_menu.handle_menu_loop(screen)
             if action == "back":
-                if pause:
-                    game_state = "PAUSE"
-                else:
-                    game_state = "MENU"
+                game_state = "MENU"
                 
         elif game_state == "GAME":                                                              # Run the actual gameloop
             game_state = game_loop(asteroidfield, drawable, updatable, asteroids, shots, player, scoreboard)
