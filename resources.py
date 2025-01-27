@@ -1,7 +1,6 @@
 import pygame
 import os
 import sys
-
 from constants import SCREEN_HEIGHT, SCREEN_WIDTH
 
 # Ensure dynamic pathing works

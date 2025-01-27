@@ -27,7 +27,7 @@ class ScoreBoard():
         self.__render_game_over_line(font48, f"Final score: {int(self.score)}", bar_surface, (150, 255, 150, 255), bar_w, bar_h, -110)
         self.__render_game_over_line(font48, f"GAME OVER", bar_surface, (255, 0, 0, 100), bar_w, bar_h - 55)
         self.__render_game_over_line(font48, f"Final level: {self.level}", bar_surface, (255, 255, 255, 0), bar_w, bar_h, 45)
-        self.__render_game_over_line(font36, f"Press any key to continue", bar_surface, (0, 0, 0, 0), bar_w, bar_h, 120)
+        self.__render_game_over_line(font36, f"Press ESC to continue", bar_surface, (0, 0, 0, 0), bar_w, bar_h, 120)
         screen.blit(bar_surface, ((SCREEN_WIDTH -bar_w)/ 2, (SCREEN_HEIGHT - bar_h) / 2))
 
     def __draw_shield_bar(self, player):

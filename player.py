@@ -12,7 +12,6 @@ from functions import point_in_triangle, point_to_line_distance
 class Player(CircleShape):
     def __init__(self, x, y):
         super().__init__(x, y, PLAYER_RADIUS)
-        self.__upgrade_key_cooldown_timer = 0
         self.__upgrade_countdown_piercing = 0
         self.__upgrade_countdown_bulletsize = 0
         self.__respawn_countdown = 0
@@ -52,40 +51,30 @@ class Player(CircleShape):
         self.rotation += PLAYER_TURN_SPEED * dt
     
     def move(self, dt):                     # move the player (forward, back)
-        # Limit maximum speed
-        if self.velocity.magnitude() < PLAYER_MAXIMUM_SPEED:
+        if self.velocity.magnitude() < PLAYER_MAXIMUM_SPEED:            # Limit maximum speed
             forward = pygame.Vector2(0, 1).rotate(self.rotation)
-            # self.position += forward * PLAYER_SPEED * dt 
             self.velocity += forward * PLAYER_ACCELERATION * dt
 
     def slow_down(self, dt, slow_factor):
-        # If velocity is very small, just stop completely
-        if self.velocity.magnitude() < 0.1:
+        if self.velocity.magnitude() < 0.1:                             # If velocity is very small, just stop completely
             self.velocity = pygame.Vector2(0, 0)
         else:
-            # Reduce velocity more aggressively than natural drag
-            slowing_force = self.velocity.normalize() * slow_factor
-            self.velocity -= slowing_force * dt        
+            slowing_force = self.velocity.normalize() * slow_factor     
+            self.velocity -= slowing_force * dt                         # Reduce velocity more aggressively than natural drag
 
     def update(self, dt):                   # process inputs from keys and do all sorts of changes to player
 
         if self.__respawn_countdown > 0:
             self.__respawn_countdown -= dt
-            return False                # Don't do anything while respawn cooldown is active
+            return False                    # Don't do anything while respawn cooldown is active
 
         self.shoot_timer -= dt
         
-        # if self.spawn_guard < PLAYER_SPAWN_SAFEGUARD * 0.15: # return to fighting color at 85% of spawn_guard has passed so player gets to safety asap
-        #     self.colour = "white"
-
         if self.spawn_guard > 0:
             self.alpha = 75 + int(125 * (math.sin(pygame.time.get_ticks() / 200) + 1) / 2)
             self.spawn_guard -= dt
         else:
             self.alpha = 255
-
-        if self.__upgrade_key_cooldown_timer > 0:
-            self.__upgrade_key_cooldown_timer -= dt
 
         if self.__upgrade_countdown_piercing > 0:
             self.__upgrade_countdown_piercing -= dt
@@ -118,27 +107,6 @@ class Player(CircleShape):
         # Create some drag to stop player even without braking
         if self.velocity.magnitude() > 0:
             self.slow_down(dt, PLAYER_DRAG)
-
-        # if self.__upgrade_key_cooldown_timer > 0:
-        #     return False
-        
-        # if keys[pygame.K_DELETE]:
-        #     self.activate_upgrade("PIERCING")
-        #     self.__upgrade_key_cooldown_timer = UPGRADE_KEY_COOLDOWN_TIMER
-
-        # if keys[pygame.K_PAGEUP]:
-        #     self.activate_upgrade("BIGGER_SHOT")
-        #     self.__upgrade_key_cooldown_timer = UPGRADE_KEY_COOLDOWN_TIMER
-        # if keys[pygame.K_PAGEDOWN]:
-        #     self.activate_upgrade("SMALLER_SHOT")
-        #     self.__upgrade_key_cooldown_timer = UPGRADE_KEY_COOLDOWN_TIMER
-
-        # if keys[pygame.K_HOME]:
-        #     self.activate_upgrade("INCREASE_SHIELD", 10)
-        #     # self.__upgrade_key_cooldown_timer = UPGRADE_KEY_COOLDOWN_TIMER
-        # if keys[pygame.K_END]:
-        #     self.activate_upgrade("DECREASE_SHIELD", 10)
-        #     #self.__upgrade_key_cooldown_timer = UPGRADE_KEY_COOLDOWN_TIMER
 
     def shoot(self):
         if self.shoot_timer > 0:

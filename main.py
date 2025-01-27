@@ -22,7 +22,8 @@ def game_over_screen(scoreboard, player):                                       
         
         for event in pygame.event.get():                
             if event.type == pygame.QUIT: exit_msg()                            # Game killed with x on window
-            if event.type == pygame.KEYDOWN: return True                        # Return to main menu
+            if event.type == pygame.KEYDOWN:                         
+                if event.key == pygame.K_ESCAPE: return True                    # Return to main menu
 
         clear_screen()             
         player_explosion.update(dt)
@@ -31,7 +32,7 @@ def game_over_screen(scoreboard, player):                                       
             player_explosion.current_frame = 0
         scoreboard.game_over()                                                  # Show final score
         pygame.display.flip()
-        dt += clock.tick(30)/1000
+        dt += clock.tick(FRAME_RATE)/1000
 
 def update_objects(updatable, dt):
     for obj in updatable: 
@@ -114,7 +115,7 @@ def game_loop(asteroidfield, drawable, updatable, asteroids, shots, player, scor
         clear_screen()                                                                          # Drawing section
         draw_objects(drawable)
         refresh_screen(player, scoreboard)
-        dt = clock.tick(60) / 1000                                                              # Game speed control
+        dt = clock.tick(FRAME_RATE) / 1000                                                              # Game speed control
 
 def init_game():                                                # Initialise base game objects
     asteroidfield = AsteroidField()                                                             
