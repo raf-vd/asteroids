@@ -15,7 +15,7 @@ class Shot(CircleShape):
         self.pierce = Shot.piercing_active
         self.frames = frames
         self.current_frame = 0
-        self.image = pygame.transform.scale(self.frames[self.current_frame], (10, 10))
+        self.image = pygame.transform.scale(self.frames[self.current_frame], (SHOT_RADIUS * Shot.shot_size_multiplier * 3.75, SHOT_RADIUS * Shot.shot_size_multiplier * 3.75))
 
 
     def reset_class_variables():            # Method to be able to reset Shot class variables
@@ -26,6 +26,7 @@ class Shot(CircleShape):
         if self.is_off_screen():
             self.kill()
         else:
+            # keeping this commented out to verify collision with actual radius vs image size
             # pygame.draw.circle(screen, "lightcyan" if self.pierce else "cyan", self.position, self.radius , 0 if self.pierce else 2)
             rect = self.image.get_rect()
             rect.center = self.position
@@ -33,11 +34,10 @@ class Shot(CircleShape):
 
     def update(self, dt):
         self.position += self.velocity * dt
-        if self.current_frame < len(self.frames)-1:
-            self.current_frame += 1
-        else:
-            self.current_frame = 0
-        bulletsize = Shot.shot_size_multiplier * 15
+        self.current_frame = (self.current_frame + 1) % len(self.frames)        # Cycle through frames
+
+
+        bulletsize = SHOT_RADIUS * Shot.shot_size_multiplier * 3.75
         if self.piercing_active:
             self.frames = piercing_shot_frames
         else:

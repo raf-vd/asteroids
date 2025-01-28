@@ -1,5 +1,6 @@
 import pygame
 from constants import *
+from functions import rect_surface, render_line
 from resources import font20, font24, font36, font48, game_sounds, level_up_sound, screen
 from shot import Shot
 
@@ -11,24 +12,13 @@ class ScoreBoard():
         self.level = level
         self.level_score = 0
 
-    def __render_game_over_line(self, font, text, bar_surface, colour, bar_w, bar_h, vertical_offset=0):
-        text_surface = font.render(text, True, colour)
-        text_rect = text_surface.get_rect(center=(bar_w / 2, bar_h / 2 + vertical_offset))
-        bar_surface.blit(text_surface, text_rect)
-
-    def __rect_surface(self, bar_w, bar_h, colour):
-        bar_surface = pygame.Surface((bar_w, bar_h), pygame.SRCALPHA)  
-        bar_surface.fill(colour)  
-        return bar_surface
-
     def game_over(self):
-        bar_w, bar_h = 400, 300
-        bar_surface = self.__rect_surface(400, 300, (255, 255, 255, 100))
-        self.__render_game_over_line(font48, f"Final score: {int(self.score)}", bar_surface, (150, 255, 150, 255), bar_w, bar_h, -110)
-        self.__render_game_over_line(font48, f"GAME OVER", bar_surface, (255, 0, 0, 100), bar_w, bar_h - 55)
-        self.__render_game_over_line(font48, f"Final level: {self.level}", bar_surface, (255, 255, 255, 0), bar_w, bar_h, 45)
-        self.__render_game_over_line(font36, f"Press ESC to continue", bar_surface, (0, 0, 0, 0), bar_w, bar_h, 120)
-        screen.blit(bar_surface, ((SCREEN_WIDTH -bar_w)/ 2, (SCREEN_HEIGHT - bar_h) / 2))
+        bar_surface = rect_surface(400, 300, (255, 255, 255, 100))
+        render_line(font48, f"Final score: {int(self.score)}", bar_surface, (150, 255, 150, 255), 50)
+        render_line(font48, f"GAME OVER", bar_surface, (255, 0, 0, 100), 125)
+        render_line(font48, f"Final level: {self.level}", bar_surface, (255, 255, 255, 0), 200)
+        render_line(font36, f"Press ESC to continue", bar_surface, (0, 0, 0, 0), bar_surface.get_height() - 25)
+        screen.blit(bar_surface, ((SCREEN_WIDTH - bar_surface.get_width()) / 2, (SCREEN_HEIGHT - bar_surface.get_height()) / 2))
 
     def __draw_shield_bar(self, player):
 
@@ -53,7 +43,7 @@ class ScoreBoard():
                     text = f"Shield: {player.shield_charge:.1f}%"
 
             # Prepare a surface for the bar
-            bar_surface = self.__rect_surface(bar_width, bar_height, bg_color)
+            bar_surface = rect_surface(bar_width, bar_height, bg_color)
 
             # Render the text set color to white below 50%
             if player.shield_charge < 50:

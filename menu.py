@@ -24,9 +24,11 @@ class Menu:
     def update_visibility(self, is_paused=False):
         new_options = []
         for label, action, _ in self.options:                           # Update visibility flags based on game state
-            visible = True
-            if is_paused and action == "start": visible = False         # Swap out "New Game" when paused
-            if not is_paused and action == "resume": visible = False    # Swap out "Resume" when not paused
+            visible = True                                              # Set default (visible)
+            if is_paused and action == "start": visible = False         # Hide "New Game" when paused
+            if is_paused and action == "quit": visible = False          # Hide "Exit" when paused
+            if not is_paused and action == "resume": visible = False    # Hide "Resume" when not paused
+            if not is_paused and action == "end": visible = False       # Hide "Resume" when not paused
             new_options.append((label, action, visible))
         self.options = new_options                                      
         self.adjust_selection()                                         # Ensure current_selection points to a visible option
@@ -84,7 +86,7 @@ class Menu:
         screen.blit(surface, (0,0))                                                             # This shows your game objects behind the transparent menu
 
         menu_surface = pygame.Surface(screen.get_size(), pygame.SRCALPHA)                       # Create a surface for the menu to be drawn upon
-        menu_surface.fill((0, 0, 0, 128))                                                       # Fill surface with transparent 50£ transaprent black
+        menu_surface.fill((0, 0, 0, 128))                                                       # Fill surface with transparent 50% transaprent black
         title_surface = self.title_font.render(self.title, True, (255, 255, 255))               # Render title (full white)
         title_rect = title_surface.get_rect(center=(SCREEN_WIDTH // 2, 100))                    # Create title surface, x:centre of screen, 100 pixels from top
         menu_surface.blit(title_surface, title_rect)                                            # Blit title to menu surface

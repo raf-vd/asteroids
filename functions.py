@@ -1,4 +1,5 @@
 import sys
+import pygame
 
 def point_to_line_distance(point, line_start, line_end):
     """Calculate shortest distance from a point to a line segment (THX BOOTS)"""
@@ -15,7 +16,6 @@ def point_to_line_distance(point, line_start, line_end):
     projection = line_start + line_vec * t
     # Distance from point to closest point
     return (point - projection).length()
-
 
 def point_in_triangle(point, triangle_points):
     """Returns True if point is inside the triangle"""
@@ -36,3 +36,13 @@ def point_in_triangle(point, triangle_points):
 def exit_msg():
     print("Asteroids ended!")                           # Th-Th-That's it folks!
     sys.exit()
+
+def rect_surface(bar_w, bar_h, colour):
+    bar_surface = pygame.Surface((bar_w, bar_h), pygame.SRCALPHA)  
+    bar_surface.fill(colour)  
+    return bar_surface
+
+def render_line(font, text, bar_surface, colour, vertical_offset=0):
+    text_surface = font.render(text, True, colour)
+    text_rect = text_surface.get_rect(center=(bar_surface.get_width() / 2, vertical_offset))
+    bar_surface.blit(text_surface, text_rect)

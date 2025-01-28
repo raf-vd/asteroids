@@ -1,8 +1,7 @@
 import pygame
-import sys
 from constants import *
-from resources import background, clock, game_over_sound, game_sounds, player_explosion_frames, screen, surface
-from functions import exit_msg
+from resources import background, clock, font32, font64, game_over_sound, game_sounds, player_explosion_frames, screen, surface
+from functions import exit_msg, rect_surface, render_line
 from explosion import Explosion
 from scoreboard import ScoreBoard
 from player import Player
@@ -10,6 +9,34 @@ from asteroid import LumpyAsteroid
 from asteroidfield import AsteroidField
 from shot import Shot
 from menu import Menu
+
+def keybinds_screen():                                                          # Show information screen with keybinds for the game
+
+    dt = 0
+    while True:                                                                 # Display final score untill player choice
+        
+        for event in pygame.event.get():                
+            if event.type == pygame.QUIT: exit_msg()                            # Game killed with x on window
+            if event.type == pygame.KEYDOWN:                         
+                if event.key == pygame.K_ESCAPE: return True                    # Return to main menu
+
+        clear_screen()                                                          # Empty screen
+
+        bar_surface = pygame.Surface(screen.get_size(), pygame.SRCALPHA)                       # Create a surface for the menu to be drawn upon
+        bar_surface.fill((255, 255, 255, 100))                                                 # Fill surface with transparent white
+        
+        render_line(font64, "Keybinds", bar_surface, (255, 255, 0), 100)
+        render_line(font32, "Z or UP-arrow = thrusters", bar_surface, (0, 0, 0), 250)
+        render_line(font32, "S or DOWN-arrow = reverse thrusters", bar_surface, (0, 0, 0), 300)
+        render_line(font32, "Q or LEFT-arrow = rotate left", bar_surface, (0, 0, 0), 350)
+        render_line(font32, "D or RIGHT-arrow = rotate right", bar_surface, (0, 0, 0), 400)
+        render_line(font32, "SPACEBAR = fire main weapon", bar_surface, (0, 0, 0), 450)
+        render_line(font32, "Left SHIFT = BRAKE", bar_surface, (0, 0, 0), 500)
+        render_line(font32, "Press ESC to continue", bar_surface, (255, 255, 255), bar_surface.get_height() - 100)
+        screen.blit(bar_surface, (0,0))
+
+        pygame.display.flip()
+        dt += clock.tick(FRAME_RATE)/1000
 
 def game_over_screen(scoreboard, player):                                       # End game with a bang & final scores
 
@@ -30,6 +57,7 @@ def game_over_screen(scoreboard, player):                                       
         player_explosion.draw()                                                 # Animate final player explosion (continues version)
         if player_explosion.current_frame == len(player_explosion.frames) -1:
             player_explosion.current_frame = 0
+        
         scoreboard.game_over()                                                  # Show final score
         pygame.display.flip()
         dt += clock.tick(FRAME_RATE)/1000
@@ -108,9 +136,7 @@ def game_loop(asteroidfield, drawable, updatable, asteroids, shots, player, scor
             
         update_objects(updatable, dt)                                                           # Recalculate all objects in updatable group
         game_over = game_mechanics(asteroidfield, asteroids, shots, player, scoreboard)         # Perform actual game mechaniscs
-        
-        if game_over:                                                                           # Game over => back to menu
-            return 'MENU'
+        if game_over: return 'MENU'                                                             # Game over => back to menu
             
         clear_screen()                                                                          # Drawing section
         draw_objects(drawable)
@@ -169,7 +195,7 @@ def main():
         
         if game_state =="PAUSE":                                                                # Handle paused state before anything
             game_paused = True                                                                  # Set pause tracker
-            current_menu.update_visibility(game_paused)                                         # During pause, hide "New Game" and show "Resume"
+            current_menu.update_visibility(game_paused)                                         # During pause Change regular menu flow => force update visibility
             game_state = "MENU"                                                                 # Continue with menu now that pause is tracked
 
         if game_state == "MENU":
@@ -180,22 +206,27 @@ def main():
                 scoreboard = None
 
             result_value = current_menu.handle_menu_loop()                                      # Shop the current menu, recieve the chosen action
-            print(result_value)
             if result_value == "start":                                                         # Start a new game
                 asteroidfield, player, scoreboard = init_game()
                 game_state = "GAME"
                 game_paused = False
             elif result_value == "resume":                                                      # Resume current  game
-                game_state = "GAME"
                 game_paused = False
+                # current_menu.update_visibility(game_paused)                                     # Restate "New Game" and hide "Resume"
+                game_state = "GAME"
+            elif result_value == "show keybinds":
+                keybinds_screen()
+                pass
             elif result_value == "end":                                                         # Stop the current game
                 cleanup_game(updatable, scoreboard)                                             # Cleanup variables
                 game_paused = False
-                current_menu.update_visibility(game_paused)                                     # Restate "New Game" and hide "Resume"
+                # current_menu.update_visibility(game_paused)                                     # Restate "New Game" and hide "Resume"
                 game_state = "MENU"                                                             # Update game/menuflow variables
             elif result_value == "quit":
                 cleanup_game(updatable, scoreboard)                                             # Cleanup vars before quitting
                 break                                                                           # Exit loop when quit was chosen
+
+            current_menu.update_visibility(game_paused)                                         # Regular menu flow: update visibility by default
 
         elif game_state == "GAME":                                                              # Run the actual gameloop
             game_state = game_loop(asteroidfield, drawable, updatable, asteroids, shots, player, scoreboard)
