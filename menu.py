@@ -1,75 +1,104 @@
 import pygame
 import sys
-from resources import background, font32, font64, surface
+from constants import SCREEN_WIDTH
+from resources import background, font32, font64, screen, surface
 from functions import exit_msg
 
 class Menu:
-    def __init__(self, title, options):
+    def __init__(self, title, options=None):
         self.title = title                      # title at the top of menu
-        self.options = options                  # options as list of tuples: [(label, action), ...]
+        self.options = []                       # List of tuples: [(label, action_or_tuple), ...]
         self.current_selection = 0              # first option highlighted
         self.title_font = font64                # larger for title
         self.option_font = font32               # smaller for menu items
+        self.parent = None                      # Reference to parent menu
+        if options:
+            self.add_options(options)                   # need to define the add_options method
 
-    def handle_menu_loop(self, screen):
+    def add_options(self, options):
+        for option in options:
+            if isinstance(option[1], Menu):
+                option[1].parent = self  # Set parent reference
+            self.options.append(option)
+
+    def update_visibility(self, is_paused=False):
+        new_options = []
+        for label, action, _ in self.options:                           # Update visibility flags based on game state
+            visible = True
+            if is_paused and action == "start": visible = False         # Swap out "New Game" when paused
+            if not is_paused and action == "resume": visible = False    # Swap out "Resume" when not paused
+            new_options.append((label, action, visible))
+        self.options = new_options                                      
+        self.adjust_selection()                                         # Ensure current_selection points to a visible option
+
+    def get_visible_options(self):                                      # Return a list of (label, action) tuples with only visible options
+        return [(label, action) for label, action, visible in self.options if visible]
+
+    def adjust_selection(self):
+        # If current selection isn't visible, move to previous visible option
+        while self.current_selection >= 0 and not self.options[self.current_selection][2]:
+            self.current_selection -= 1
+        
+        if self.current_selection < 0:                                  # If we went below 0, find first visible option
+            for i in range(len(self.options)):
+                if self.options[i][2]:                                  # if option is visible
+                    self.current_selection = i
+                    break
+
+    def select_current_option(self):
+        """Handle selection of the current highlighted option"""
+        _, selected_value, _ = self.options[self.current_selection]
+        
+        if isinstance(selected_value, Menu):
+            return ("change_menu", selected_value)  # Tell game to switch to submenu
+        else:
+            return ("action", selected_value)       # Return action for game to process
+
+    def handle_menu_loop(self):
         menu_active = True
         while menu_active:                                                                          # Loop to keep menu active
             for event in pygame.event.get():                                                        # Get user input & process it
-                if event.type == pygame.QUIT: exit_msg()                                            # Game killed with x on window
+                if event.type == pygame.QUIT:                                                       # Game killed with x on window
+                    exit_msg()
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_UP:
-                        self.current_selection = (self.current_selection - 1) % len(self.options)
-                    elif event.key == pygame.K_DOWN:
-                        self.current_selection = (self.current_selection + 1) % len(self.options)
+                    if event.key == pygame.K_UP or event.key == pygame.K_DOWN:                      # Move selection
+                        direction = -1 if event.key == pygame.K_UP else 1                           # Previous or next
+                        visible_options = self.get_visible_options()                                # Consider only visible options
+                        self.current_selection = (self.current_selection + direction) % len(visible_options)
                     elif event.key == pygame.K_RETURN:
-                        return self.options[self.current_selection][1]                              # Return the action
-                    elif event.key == pygame.K_ESCAPE and self.title != "ASTEROIDS":
-                        return "back"                                                               # Only allow escape to work in submenus
-                        
-            self.draw_menu(screen)
-            pygame.display.flip()
+                        visible_options = self.get_visible_options()
+                        selected_option = visible_options[self.current_selection][1]                        
+                        if isinstance(selected_option, Menu):
+                            return selected_option.handle_menu_loop()                              # Enter submenu (recursively call handler)
+                        else:
+                            return selected_option                                                  # Return the action
+                    elif event.key == pygame.K_ESCAPE and self.parent:
+                        return "back"                                                               # Only allow escape if there's a parent menu
+                            
+                self.draw_menu()
+                pygame.display.flip()
 
-    def draw_menu(self, screen):
-        # First, ensure the game is still visible
-        screen.blit(background, (0,0))
-        screen.blit(surface, (0,0))  # This shows your game objects        
+    def draw_menu(self):
+        
+        screen.blit(background, (0,0))                                                          # First, ensure the game is still visible
+        screen.blit(surface, (0,0))                                                             # This shows your game objects behind the transparent menu
 
         menu_surface = pygame.Surface(screen.get_size(), pygame.SRCALPHA)                       # Create a surface for the menu to be drawn upon
         menu_surface.fill((0, 0, 0, 128))                                                       # Fill surface with transparent 50£ transaprent black
         title_surface = self.title_font.render(self.title, True, (255, 255, 255))               # Render title (full white)
-        title_rect = title_surface.get_rect(center=(screen.get_width() // 2, 100))              # Create title surface, x:centre of screen, 100 pixels from top
+        title_rect = title_surface.get_rect(center=(SCREEN_WIDTH // 2, 100))                    # Create title surface, x:centre of screen, 100 pixels from top
         menu_surface.blit(title_surface, title_rect)                                            # Blit title to menu surface
-        
-        # Draw options
+
+        visible_options = self.get_visible_options()                                            # Get only visible options for drawing
+
         option_y = 250                                                                          # Starting y position for first option
-        for i, (option_text, _) in enumerate(self.options):
+        for i, option in enumerate(visible_options):                                            # Draw options in a loop
             color = (255, 255, 0) if i == self.current_selection else (255, 255, 255)           # Highlight selected option
-            option_surface = self.option_font.render(option_text, True, color)                  # Render the option text
+            text = f"< {option[0]} >" if isinstance(option[1], Menu) else option[0]             # Put < ... > around submenu's
+            option_surface = self.option_font.render(text, True, color)                         # Render the option text
             option_rect = option_surface.get_rect(center=(screen.get_width() // 2, option_y))   # Create option surface, x:centre of screen, 250+i*50 pixels from top
             menu_surface.blit(option_surface, option_rect)                                      # Blit option to the menu surface
             option_y += 50                                                                      # Space between options                                             
 
         screen.blit(menu_surface, (0, 0))                                                       # Blit the complete menu to the screen
 
-    @classmethod
-    def create_main_menu(cls, is_game_paused=False):
-        if is_game_paused:
-            options = [
-                ("Resume", "resume"),                       # When paused, new game is replaced by resume
-                ("Controls", "controls"),
-                ("Exit", "quit")
-            ]
-        else:
-            options = [
-                ("New Game", "start"),                      # When not in game, new game is available and not resume
-                ("Controls", "controls"),
-                ("Exit", "quit")
-            ]
-        return cls("ASTEROIDS", options)
-
-    @classmethod
-    def create_controls_menu(cls):
-        options = [
-            ("Back", "back")
-        ]
-        return cls("CONTROLS", options)
