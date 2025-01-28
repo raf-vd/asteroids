@@ -115,7 +115,7 @@ def game_loop(asteroidfield, drawable, updatable, asteroids, shots, player, scor
         clear_screen()                                                                          # Drawing section
         draw_objects(drawable)
         refresh_screen(player, scoreboard)
-        dt = clock.tick(FRAME_RATE) / 1000                                                              # Game speed control
+        dt = clock.tick(FRAME_RATE) / 1000                                                      # Game speed control
 
 def init_game():                                                # Initialise base game objects
     asteroidfield = AsteroidField()                                                             
@@ -124,10 +124,11 @@ def init_game():                                                # Initialise bas
     return asteroidfield, player, scoreboard
 
 def cleanup_game(updatable, scoreboard):
-     # Remove all objects
-     del scoreboard
-     for obj in updatable:
-         obj.kill()
+    # Remove all objects
+    clear_screen()
+    del scoreboard
+    for obj in updatable:
+        obj.kill()
 
 def main(): 
     print("Starting asteroids!")
@@ -154,6 +155,7 @@ def main():
     main_menu = Menu("Asteroids",[("New Game", "start", True),
                                   ("Resume", "resume", False),
                                   ("Settings", settings_menu, True),
+                                  ("End Game", "end", False),
                                   ("Exit", "quit", True)])                                           
     current_menu = main_menu         # Track current menu
 
@@ -178,16 +180,22 @@ def main():
                 scoreboard = None
 
             result_value = current_menu.handle_menu_loop()                                      # Shop the current menu, recieve the chosen action
-            if result_value == "start":                                                         # 
+            print(result_value)
+            if result_value == "start":                                                         # Start a new game
                 asteroidfield, player, scoreboard = init_game()
                 game_state = "GAME"
                 game_paused = False
-            elif result_value == "resume":
+            elif result_value == "resume":                                                      # Resume current  game
                 game_state = "GAME"
                 game_paused = False
+            elif result_value == "end":                                                         # Stop the current game
+                cleanup_game(updatable, scoreboard)                                             # Cleanup variables
+                game_paused = False
+                current_menu.update_visibility(game_paused)                                     # Restate "New Game" and hide "Resume"
+                game_state = "MENU"                                                             # Update game/menuflow variables
             elif result_value == "quit":
-                cleanup_game(updatable, scoreboard)                                         # Cleanup vars before quitting
-                break                                                                       # Exit loop when quit was chosen
+                cleanup_game(updatable, scoreboard)                                             # Cleanup vars before quitting
+                break                                                                           # Exit loop when quit was chosen
 
         elif game_state == "GAME":                                                              # Run the actual gameloop
             game_state = game_loop(asteroidfield, drawable, updatable, asteroids, shots, player, scoreboard)
