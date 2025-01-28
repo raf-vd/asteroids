@@ -148,9 +148,15 @@ def main():
     Shot.containers = (shots, updatable, drawable)
     Explosion.containers = (explosions, updatable, drawable)
 
-    main_menu = Menu.create_main_menu()                                                         # Create menu
-    controls_menu = Menu.create_controls_menu()                                                 # Create submenu
-    
+    settings_menu = Menu("Settings",[("Keybinds", "show keybinds", True),
+                                     ("Sound", "THIS WILL BE A DEEPPER LEVEL SUBMENU LATER", True),
+                                     ("Back", "back", True)])                                           
+    main_menu = Menu("Asteroids",[("New Game", "start", True),
+                                  ("Resume", "resume", False),
+                                  ("Settings", settings_menu, True),
+                                  ("Exit", "quit", True)])                                           
+    current_menu = main_menu         # Track current menu
+
     game_state = "MENU"                                                                         # Init variables
     game_paused = False
     asteroidfield = None
@@ -161,6 +167,7 @@ def main():
         
         if game_state =="PAUSE":                                                                # Handle paused state before anything
             game_paused = True                                                                  # Set pause tracker
+            current_menu.update_visibility(game_paused)                                         # During pause, hide "New Game" and show "Resume"
             game_state = "MENU"                                                                 # Continue with menu now that pause is tracked
 
         if game_state == "MENU":
@@ -170,27 +177,18 @@ def main():
                 player = None
                 scoreboard = None
 
-            main_menu = Menu.create_main_menu(game_paused)                                      # Show 'resume' in menu if paused, else show 'new game'
-            action = main_menu.handle_menu_loop(screen)
-            
-            if action == "start":                                                               # Evaluate action chosen in menu
+            result_value = current_menu.handle_menu_loop()                                      # Shop the current menu, recieve the chosen action
+            if result_value == "start":                                                         # 
                 asteroidfield, player, scoreboard = init_game()
                 game_state = "GAME"
                 game_paused = False
-            elif action == "resume":
+            elif result_value == "resume":
                 game_state = "GAME"
                 game_paused = False
-            elif action == "controls":
-                game_state = "CONTROLS"
-            elif action == "quit":
-                cleanup_game(updatable, scoreboard)                                             # Cleanup vars before quitting
-                break                                                                           # Exit loop when quit was chosen
+            elif result_value == "quit":
+                cleanup_game(updatable, scoreboard)                                         # Cleanup vars before quitting
+                break                                                                       # Exit loop when quit was chosen
 
-        elif game_state == "CONTROLS":                                                          # Submenu handling
-            action = controls_menu.handle_menu_loop(screen)
-            if action == "back":
-                game_state = "MENU"
-                
         elif game_state == "GAME":                                                              # Run the actual gameloop
             game_state = game_loop(asteroidfield, drawable, updatable, asteroids, shots, player, scoreboard)
 
