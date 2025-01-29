@@ -5,17 +5,15 @@ from circleshape import CircleShape
 
 class Shot(CircleShape):
 
-    piercing_active = False
-    shot_size_multiplier = 1
-
-    def __init__(self, x, y, frames=shot_frames):
-        super().__init__(x, y, SHOT_RADIUS * Shot.shot_size_multiplier)
+    def __init__(self, x, y, radius=SHOT_RADIUS, piercing=False):
+        super().__init__(x, y, radius)
         if shot_channel.get_busy: shot_sound.stop()
         shot_channel.play(shot_sound)
-        self.pierce = Shot.piercing_active
-        self.frames = frames
+        self.__bulletsize = self.radius * 3.75      # conversion of the frame to pixels size
+        self.pierce = piercing
+        self.frames =  piercing_shot_frames if self.pierce else shot_frames
         self.current_frame = 0
-        self.image = pygame.transform.scale(self.frames[self.current_frame], (SHOT_RADIUS * Shot.shot_size_multiplier * 3.75, SHOT_RADIUS * Shot.shot_size_multiplier * 3.75))
+        self.image = pygame.transform.scale(self.frames[self.current_frame], (self.__bulletsize, self.__bulletsize))
 
 
     def reset_class_variables():            # Method to be able to reset Shot class variables
@@ -35,11 +33,4 @@ class Shot(CircleShape):
     def update(self, dt):
         self.position += self.velocity * dt
         self.current_frame = (self.current_frame + 1) % len(self.frames)        # Cycle through frames
-
-
-        bulletsize = SHOT_RADIUS * Shot.shot_size_multiplier * 3.75
-        if self.piercing_active:
-            self.frames = piercing_shot_frames
-        else:
-            self.frames = shot_frames
-        self.image = pygame.transform.scale(self.frames[self.current_frame], (bulletsize, bulletsize))
+        self.image = pygame.transform.scale(self.frames[self.current_frame], (self.__bulletsize, self.__bulletsize))    

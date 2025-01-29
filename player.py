@@ -4,14 +4,20 @@ import math
 from constants import *
 from resources import alert_channel, alert_sound, player_death_sound, player_explosion_frames, player_image, shield_channel, shield_hit_sound, surface
 from circleshape import CircleShape
+from enum import Enum
 from shot import Shot
 from explosion import Explosion
 from functions import point_in_triangle, point_to_line_distance
+
+# Possible powerups in an enum
+PowerUp = Enum("PowerUp", ["PIERCING", "BIGGER_SHOT", "SMALLER_SHOT", "INCREASE_SHIELD", "DECREASE_SHIELD"])
 
 # Class to handle the player
 class Player(CircleShape):
     def __init__(self, x, y):
         super().__init__(x, y, PLAYER_RADIUS)
+        self.__piercing_active = False
+        self.__shot_size_multiplier = 1
         self.__upgrade_countdown_piercing = 0
         self.__upgrade_countdown_bulletsize = 0
         self.__respawn_countdown = 0
@@ -24,6 +30,12 @@ class Player(CircleShape):
         self.non_hit_scoring_streak = 0
         self.alpha = 255
  
+    def piercing_active(self):
+        return self.__piercing_active
+
+    def shot_size_multiplier(self):
+        return self.__shot_size_multiplier
+
     def triangle(self):                     # calculate a triangle for player
         forward = pygame.Vector2(0, 1).rotate(self.rotation)
         right = pygame.Vector2(0, 1).rotate(self.rotation + 90) * self.radius / 1.5
@@ -79,18 +91,17 @@ class Player(CircleShape):
         if self.__upgrade_countdown_piercing > 0:
             self.__upgrade_countdown_piercing -= dt
         else:
-            if Shot.piercing_active:
-                Shot.piercing_active = False
+            self.__piercing_active = False
 
         if self.__upgrade_countdown_bulletsize > 0:
             self.__upgrade_countdown_bulletsize-= dt
         else:
-            self.activate_upgrade("SMALLER_SHOT")
+            self.activate_upgrade(PowerUp.SMALLER_SHOT)
 
         if self.non_hit_scoring_streak > PLAYER_MIN_SCORE_STREAK:  # you need to have a minimal scoring streak to have any shield regeneration
             if self.shield_regeneration < 2.0:                                                                  # Hardcap shieldregen
                 self.shield_regeneration = (self.non_hit_scoring_streak / 100) * (1 / (self.shield_charge*3 +1)) # Shield regen lowers when more shield is active
-            self.activate_upgrade("INCREASE_SHIELD", self.shield_regeneration)
+            self.activate_upgrade(PowerUp.INCREASE_SHIELD, self.shield_regeneration)
 
         # Process input
         keys = pygame.key.get_pressed()
@@ -112,7 +123,7 @@ class Player(CircleShape):
         if self.shoot_timer > 0:
             return
         self.shoot_timer = PLAYER_SHOOT_COOLDOWN
-        shot = Shot(self.position.x, self.position.y)
+        shot = Shot(self.position.x, self.position.y, SHOT_RADIUS * self.__shot_size_multiplier, self.__piercing_active)
         shot.velocity = pygame.Vector2(0, 1).rotate(self.rotation) * PLAYER_SHOOT_SPEED
 
     def check_collision(self, other):
@@ -135,7 +146,7 @@ class Player(CircleShape):
 
                 self.non_hit_scoring_streak = 0                             # hits on shield resets scoring streak
                 self.shield_regeneration * 0.9                              # hits on shield decrease regeneration rate
-                self.activate_upgrade("DECREASE_SHIELD", 1)                 # reduce shieldcharge on hit
+                self.activate_upgrade(PowerUp.DECREASE_SHIELD, 1)                 # reduce shieldcharge on hit
                 return False                                                # return False prevent hits from hitting player while shielded
 
         # Broad check: circular player outside mainradius + lumpradius
@@ -205,31 +216,43 @@ class Player(CircleShape):
         return False                                                                            # No collision
     
     def activate_upgrade(self, upgrade, value=1):
-        if upgrade == "PIERCING":
-            if not Shot.piercing_active:
-                Shot.piercing_active = True
-                self.__upgrade_countdown_piercing = 5
+
+        match upgrade:
         
-        elif upgrade == "BIGGER_SHOT":
-            if Shot.shot_size_multiplier < 10:
-                Shot.shot_size_multiplier += 1
-                self.__upgrade_countdown_bulletsize = 1
-        elif upgrade == "SMALLER_SHOT":
-            if Shot.shot_size_multiplier > 1:
-                Shot.shot_size_multiplier -= 1
-                if Shot.shot_size_multiplier > 1:
+            case PowerUp.PIERCING:
+                if not self.__piercing_active:
+                    self.__piercing_active = True
+                    self.__upgrade_countdown_piercing = 5
+
+            case PowerUp.BIGGER_SHOT:        
+                if self.__shot_size_multiplier < 10: 
+                    self.__shot_size_multiplier += 1
                     self.__upgrade_countdown_bulletsize = 1
-        
-        elif upgrade == "INCREASE_SHIELD":
-            if self.shield_charge + value < 100:
-                self.shield_charge += value
-            else:
-                self.shield_charge = 100    # force down to max if somehow surpasses max
-        elif upgrade == "DECREASE_SHIELD":
-            if self.shield_charge - value> 0:
-                self.shield_charge -= value
-            else:
-                self.shield_charge = 0      # force up to 0 if somehow goes negative
+                # if Shot.shot_size_multiplier < 10:
+                #     Shot.shot_size_multiplier += 1
+                #     self.__upgrade_countdown_bulletsize = 1
+
+            case PowerUp.SMALLER_SHOT:
+                if self.__shot_size_multiplier > 1:
+                    self.__shot_size_multiplier -= 1
+                    if self.__shot_size_multiplier > 1:
+                        self.__upgrade_countdown_bulletsize = 1
+                # if Shot.shot_size_multiplier > 1:
+                #     Shot.shot_size_multiplier -= 1
+                #     if Shot.shot_size_multiplier > 1:
+                #         self.__upgrade_countdown_bulletsize = 1
+
+            case PowerUp.INCREASE_SHIELD:
+                if self.shield_charge + value < 100:
+                    self.shield_charge += value
+                else:
+                    self.shield_charge = 100    # force down to max if somehow surpasses max
+
+            case PowerUp.DECREASE_SHIELD:
+                if self.shield_charge - value> 0:
+                    self.shield_charge -= value
+                else:
+                    self.shield_charge = 0      # force up to 0 if somehow goes negative
 
     def __respawn(self, position, remaining_lives):         # Reset player & bufs
         self.init_player(position, remaining_lives)         # player

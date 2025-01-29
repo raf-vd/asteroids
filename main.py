@@ -4,7 +4,7 @@ from resources import background, clock, font32, font64, game_over_sound, game_s
 from functions import exit_msg, rect_surface, render_line
 from explosion import Explosion
 from scoreboard import ScoreBoard
-from player import Player
+from player import Player, PowerUp
 from asteroid import LumpyAsteroid
 from asteroidfield import AsteroidField
 from shot import Shot
@@ -107,9 +107,9 @@ def game_mechanics(asteroidfield, asteroids, shots, player, scoreboard):
                     del obj.lumps[rc]
                 else:
                     if obj.split():
-                        player.activate_upgrade("PIERCING")                 # Centre of asteroid hit => enable piercing shots
+                        player.activate_upgrade(PowerUp.PIERCING)           # Centre of asteroid hit => enable piercing shots
                     else:
-                        player.activate_upgrade("BIGGER_SHOT")              # Smallest size asteroid centre hit => enable larger shots
+                        player.activate_upgrade(PowerUp.BIGGER_SHOT)        # Smallest size asteroid centre hit => enable larger shots
                     score_hit = obj.score_value
 
                 player.non_hit_scoring_streak += score_hit                  # Increase scoring streak

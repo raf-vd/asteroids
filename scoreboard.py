@@ -73,24 +73,24 @@ class ScoreBoard():
         if game_sounds.get_busy: game_sounds.stop()
         game_sounds.play(level_up_sound)
 
+    def __get_upgrades(self, player):
+        upgrades = []
+        if player.piercing_active():
+            upgrades.append("piercing bullets")
+        if player.shot_size_multiplier() > 1:
+            upgrades.append(f"bullet size + {player.shot_size_multiplier()-1}")
+        return "none" if not upgrades else ", ".join(upgrades)
+
     def update(self, player):
         score_text = font36.render(f"Score: {int(self.score)}", True, "green")
         lives_text = font36.render(f"Lives: {player.lives}", True, "green")
         level_text = font24.render(f"Level: {self.level}", True, "white")
-        upgrades_text = font20.render(f"Active upgrades: {self.get_upgrades()}", True, "black", "white")
+        upgrades_text = font20.render(f"Active upgrades: {self.__get_upgrades(player)}", True, "black", "white")
 
         screen.blit(score_text, (10, 10))
         screen.blit(lives_text, (10, 35))
         screen.blit(level_text, (10, 60))
         screen.blit(upgrades_text, (10, screen.get_height()-30))
         self.__draw_shield_bar(player)
-
-    def get_upgrades(self):
-        upgrades = []
-        if Shot.piercing_active:
-            upgrades.append("piercing bullets")
-        if Shot.shot_size_multiplier > 1:
-            upgrades.append(f"bullet size + {Shot.shot_size_multiplier-1}")
-        return "none" if not upgrades else ", ".join(upgrades)
     
     
