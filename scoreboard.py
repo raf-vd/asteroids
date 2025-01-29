@@ -1,8 +1,6 @@
-import pygame
 from constants import *
 from functions import rect_surface, render_line
 from resources import font20, font24, font36, font48, game_sounds, level_up_sound, screen
-from shot import Shot
 
 class ScoreBoard():
 

@@ -216,7 +216,6 @@ def main():
                 game_state = "GAME"
             elif result_value == "show keybinds":
                 keybinds_screen()
-                pass
             elif result_value == "end":                                                         # Stop the current game
                 cleanup_game(updatable, scoreboard)                                             # Cleanup variables
                 game_paused = False

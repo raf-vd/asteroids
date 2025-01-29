@@ -1,5 +1,4 @@
-import sys
-import pygame
+import pygame, random, sys
 
 def point_to_line_distance(point, line_start, line_end):
     """Calculate shortest distance from a point to a line segment (THX BOOTS)"""
@@ -46,3 +45,7 @@ def render_line(font, text, bar_surface, colour, vertical_offset=0):
     text_surface = font.render(text, True, colour)
     text_rect = text_surface.get_rect(center=(bar_surface.get_width() / 2, vertical_offset))
     bar_surface.blit(text_surface, text_rect)
+
+def biased_random():
+    r = random.random()     # Raw random from 0 to 1
+    return r * r            # Square or cube it to bias towards 0

@@ -1,13 +1,11 @@
-import pygame
-import random
-import math
+import math, pygame, random
 from constants import *
+from functions import point_in_triangle, point_to_line_distance
 from resources import alert_channel, alert_sound, player_death_sound, player_explosion_frames, player_image, shield_channel, shield_hit_sound, surface
 from circleshape import CircleShape
 from enum import Enum
-from shot import Shot
 from explosion import Explosion
-from functions import point_in_triangle, point_to_line_distance
+from shot import Shot
 
 # Possible powerups in an enum
 PowerUp = Enum("PowerUp", ["PIERCING", "BIGGER_SHOT", "SMALLER_SHOT", "INCREASE_SHIELD", "DECREASE_SHIELD"])
