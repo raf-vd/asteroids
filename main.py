@@ -175,15 +175,15 @@ def main():
     Shot.containers = (shots, updatable, drawable)
     Explosion.containers = (explosions, updatable, drawable)
 
-    settings_menu = Menu("Settings",[("Keybinds", "show keybinds", True),
+    settings_menu = Menu("Settings",[("Keybinds", keybinds_screen, True),
                                      ("Sound", "THIS WILL BE A DEEPPER LEVEL SUBMENU LATER", True),
                                      ("Back", "back", True)])                                           
     main_menu = Menu("Asteroids",[("New Game", "start", True),
                                   ("Resume", "resume", False),
                                   ("Settings", settings_menu, True),
-                                  ("End Game", "end", False),
+                                  ("Abort Game", "end", False),
                                   ("Exit", "quit", True)])                                           
-    current_menu = main_menu         # Track current menu
+    current_menu = main_menu                                                                    # Track current menu
 
     game_state = "MENU"                                                                         # Init variables
     game_paused = False
@@ -192,7 +192,7 @@ def main():
     scoreboard = None
     
     while True:        
-        
+
         if game_state =="PAUSE":                                                                # Handle paused state before anything
             game_paused = True                                                                  # Set pause tracker
             current_menu.update_visibility(game_paused)                                         # During pause Change regular menu flow => force update visibility
@@ -212,14 +212,10 @@ def main():
                 game_paused = False
             elif result_value == "resume":                                                      # Resume current  game
                 game_paused = False
-                # current_menu.update_visibility(game_paused)                                     # Restate "New Game" and hide "Resume"
                 game_state = "GAME"
-            elif result_value == "show keybinds":
-                keybinds_screen()
             elif result_value == "end":                                                         # Stop the current game
                 cleanup_game(updatable, scoreboard)                                             # Cleanup variables
                 game_paused = False
-                # current_menu.update_visibility(game_paused)                                     # Restate "New Game" and hide "Resume"
                 game_state = "MENU"                                                             # Update game/menuflow variables
             elif result_value == "quit":
                 cleanup_game(updatable, scoreboard)                                             # Cleanup vars before quitting

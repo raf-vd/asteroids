@@ -1,5 +1,4 @@
 import pygame
-import sys
 from constants import SCREEN_WIDTH
 from resources import background, font32, font64, screen, surface
 from functions import exit_msg
@@ -31,32 +30,17 @@ class Menu:
             if not is_paused and action == "end": visible = False       # Hide "Resume" when not paused
             new_options.append((label, action, visible))
         self.options = new_options                                      
-        self.adjust_selection()                                         # Ensure current_selection points to a visible option
 
     def get_visible_options(self):                                      # Return a list of (label, action) tuples with only visible options
         return [(label, action) for label, action, visible in self.options if visible]
 
     def adjust_selection(self):
-        # If current selection isn't visible, move to previous visible option
-        while self.current_selection >= 0 and not self.options[self.current_selection][2]:
-            self.current_selection -= 1
-        
-        if self.current_selection < 0:                                  # If we went below 0, find first visible option
-            for i in range(len(self.options)):
-                if self.options[i][2]:                                  # if option is visible
-                    self.current_selection = i
-                    break
-
-    def select_current_option(self):
-        """Handle selection of the current highlighted option"""
-        _, selected_value, _ = self.options[self.current_selection]
-        
-        if isinstance(selected_value, Menu):
-            return ("change_menu", selected_value)  # Tell game to switch to submenu
-        else:
-            return ("action", selected_value)       # Return action for game to process
+        self.current_selection = 0
+        while not self.options[self.current_selection][2]:
+            self.current_selection += 1
 
     def handle_menu_loop(self):
+        self.current_selection=0
         menu_active = True
         while menu_active:                                                                          # Loop to keep menu active
             for event in pygame.event.get():                                                        # Get user input & process it
@@ -72,11 +56,13 @@ class Menu:
                         selected_option = visible_options[self.current_selection][1]                        
                         if isinstance(selected_option, Menu):
                             return selected_option.handle_menu_loop()                              # Enter submenu (recursively call handler)
+                        elif callable(selected_option):
+                            selected_option()
                         else:
                             return selected_option                                                  # Return the action
-                    elif event.key == pygame.K_ESCAPE and self.parent:
-                        return "back"                                                               # Only allow escape if there's a parent menu
-                            
+                    elif event.key == pygame.K_ESCAPE: 
+                        return "back" if self.parent else "resume"                                 # Esc parent meny = back, Esc pause = resume
+
                 self.draw_menu()
                 pygame.display.flip()
 
