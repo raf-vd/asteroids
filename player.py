@@ -5,6 +5,7 @@ from resources import alert_channel, alert_sound, player_death_sound, player_exp
 from circleshape import CircleShape
 from enum import Enum
 from explosion import Explosion
+from particle import ParticleSystem
 from shot import Shot
 
 # Possible powerups in an enum
@@ -27,6 +28,7 @@ class Player(CircleShape):
         self.shield_regeneration = 0
         self.non_hit_scoring_streak = 0
         self.alpha = 255
+        self.rear_thruster = ParticleSystem(self)
  
     def piercing_active(self):
         return self.__piercing_active
@@ -46,7 +48,7 @@ class Player(CircleShape):
         if self.__respawn_countdown > 0:                                    # Don't show player while respawn cooldown is active
             return False                
         self.wrap_screen()
-        #pygame.draw.polygon(screen, self.colour, self.triangle(), 2)       # Original version drew a triangle
+        #pygame.draw.polygon(screen, self.colour, self.triangle(), 2)       # Original version drew a triangle, replaced by same shape & size image
         r_img = pygame.transform.rotate(player_image, -self.rotation)       # Make sure image rotates with player
         r_img.set_alpha(self.alpha)                                         # Handle 'invulnerable oscilation'
         rect = r_img.get_rect()
@@ -56,6 +58,9 @@ class Player(CircleShape):
         if int(self.shield_charge) > 0:
             # Fluctuate shield transparancy for nice visual effect
             pygame.draw.circle(surface, (150, 250, 150, random.randint(20, 80)), self.position, self.radius + 10 + int(self.shield_charge), int(self.shield_charge))
+
+        # Show thrusters
+        self.rear_thruster.draw()
     
     def rotate(self, dt):                   # rotate the player (left, right)
         self.rotation += PLAYER_TURN_SPEED * dt
@@ -64,6 +69,9 @@ class Player(CircleShape):
         if self.velocity.magnitude() < PLAYER_MAXIMUM_SPEED:            # Limit maximum speed
             forward = pygame.Vector2(0, 1).rotate(self.rotation)
             self.velocity += forward * PLAYER_ACCELERATION * dt
+
+        if dt > 0:                                                      # If moving forward (dt > 0), create thruster particles
+            self.rear_thruster.create_particles(5)
 
     def slow_down(self, dt, slow_factor):
         if self.velocity.magnitude() < 0.1:                             # If velocity is very small, just stop completely
@@ -116,6 +124,9 @@ class Player(CircleShape):
         # Create some drag to stop player even without braking
         if self.velocity.magnitude() > 0:
             self.slow_down(dt, PLAYER_DRAG)
+
+        # Update thrusters
+        self.rear_thruster.update()
 
     def shoot(self):
         if self.shoot_timer > 0:
