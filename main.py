@@ -1,7 +1,7 @@
 import pygame
 from constants import *
 from resources import background, clock, font32, font64, game_over_sound, game_sounds, player_explosion_frames, screen, surface
-from functions import exit_msg, rect_surface, render_line
+from functions import exit_msg, render_line
 from explosion import Explosion
 from scoreboard import ScoreBoard
 from player import Player, PowerUp
@@ -10,22 +10,44 @@ from asteroidfield import AsteroidField
 from shot import Shot
 from menu import Menu
 
-def keybinds_screen():                                                          # Show information screen with keybinds for the game
-
+def menu_placeholder():
     dt = 0
-    while True:                                                                 # Display final score untill player choice
+    while True:                                                                
         
         for event in pygame.event.get():                
-            if event.type == pygame.QUIT: exit_msg()                            # Game killed with x on window
+            if event.type == pygame.QUIT: exit_msg()                                            # Game killed with x on window
             if event.type == pygame.KEYDOWN:                         
-                if event.key == pygame.K_ESCAPE: return True                    # Return to main menu
+                if event.key == pygame.K_ESCAPE: return True                                    # Return to main menu
 
-        clear_screen()                                                          # Empty screen
+        clear_screen()                                                                          # Empty screen
 
-        bar_surface = pygame.Surface(screen.get_size(), pygame.SRCALPHA)                       # Create a surface for the menu to be drawn upon
-        bar_surface.fill((255, 255, 255, 100))                                                 # Fill surface with transparent white
+        bar_surface = pygame.Surface(screen.get_size(), pygame.SRCALPHA)                        # Create a surface for the menu to be drawn upon
+        bar_surface.fill((255, 255, 255, 100))                                                  # Fill surface with transparent white
+
+        render_line(font64, "menu placeholder", bar_surface, (255, 255, 0), 100)                # Actual data
+
+        render_line(font32, "Press ESC to continue", bar_surface, (255, 255, 255), bar_surface.get_height() - 100)
+        screen.blit(bar_surface, (0,0))
+
+        pygame.display.flip()
+        dt += clock.tick(FRAME_RATE_MENU)/1000
+
+def keybinds_screen():                                                                           # Show information screen with keybinds for the game
+
+    dt = 0
+    while True:                                                                
         
-        render_line(font64, "Keybinds", bar_surface, (255, 255, 0), 100)
+        for event in pygame.event.get():                
+            if event.type == pygame.QUIT: exit_msg()                                            # Game killed with x on window
+            if event.type == pygame.KEYDOWN:                         
+                if event.key == pygame.K_ESCAPE: return True                                    # Return to main menu
+
+        clear_screen()                                                                          # Empty screen
+
+        bar_surface = pygame.Surface(screen.get_size(), pygame.SRCALPHA)                        # Create a surface for the menu to be drawn upon
+        bar_surface.fill((255, 255, 255, 100))                                                  # Fill surface with transparent white
+        
+        render_line(font64, "Keybinds", bar_surface, (255, 255, 0), 100)                        # Actual data
         render_line(font32, "Z or UP-arrow = thrusters", bar_surface, (0, 0, 0), 250)
         render_line(font32, "S or DOWN-arrow = reverse thrusters", bar_surface, (0, 0, 0), 300)
         render_line(font32, "Q or LEFT-arrow = rotate left", bar_surface, (0, 0, 0), 350)
@@ -36,7 +58,7 @@ def keybinds_screen():                                                          
         screen.blit(bar_surface, (0,0))
 
         pygame.display.flip()
-        dt += clock.tick(FRAME_RATE)/1000
+        dt += clock.tick(FRAME_RATE_MENU)/1000
 
 def game_over_screen(scoreboard, player):                                       # End game with a bang & final scores
 
@@ -176,7 +198,7 @@ def main():
     Explosion.containers = (explosions, updatable, drawable)
 
     settings_menu = Menu("Settings",[("Keybinds", keybinds_screen, True),
-                                     ("Sound", "THIS WILL BE A DEEPPER LEVEL SUBMENU LATER", True),
+                                     ("Sound", menu_placeholder, True),
                                      ("Back", "back", True)])                                           
     main_menu = Menu("Asteroids",[("New Game", "start", True),
                                   ("Resume", "resume", False),
