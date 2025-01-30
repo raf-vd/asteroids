@@ -5,7 +5,7 @@ from resources import alert_channel, alert_sound, player_death_sound, player_exp
 from circleshape import CircleShape
 from enum import Enum
 from explosion import Explosion
-from particle import ParticleSystem
+from particle import ParticleSystem, ThrusterPosition
 from shot import Shot
 
 # Possible powerups in an enum
@@ -28,7 +28,9 @@ class Player(CircleShape):
         self.shield_regeneration = 0
         self.non_hit_scoring_streak = 0
         self.alpha = 255
-        self.rear_thruster = ParticleSystem(self)
+        self.rear_thrusterL = ParticleSystem(self, ThrusterPosition.LEFT_BACK)
+        self.rear_thruster = ParticleSystem(self, ThrusterPosition.BACK)
+        self.rear_thrusterR = ParticleSystem(self, ThrusterPosition.RIGHT_BACK)
  
     def piercing_active(self):
         return self.__piercing_active
@@ -60,7 +62,9 @@ class Player(CircleShape):
             pygame.draw.circle(surface, (150, 250, 150, random.randint(20, 80)), self.position, self.radius + 10 + int(self.shield_charge), int(self.shield_charge))
 
         # Show thrusters
+        self.rear_thrusterL.draw()
         self.rear_thruster.draw()
+        self.rear_thrusterR.draw()
     
     def rotate(self, dt):                   # rotate the player (left, right)
         self.rotation += PLAYER_TURN_SPEED * dt
@@ -71,7 +75,9 @@ class Player(CircleShape):
             self.velocity += forward * PLAYER_ACCELERATION * dt
 
         if dt > 0:                                                      # If moving forward (dt > 0), create thruster particles
+            self.rear_thrusterL.create_particles(5)
             self.rear_thruster.create_particles(5)
+            self.rear_thrusterR.create_particles(5)
 
     def slow_down(self, dt, slow_factor):
         if self.velocity.magnitude() < 0.1:                             # If velocity is very small, just stop completely
@@ -126,7 +132,9 @@ class Player(CircleShape):
             self.slow_down(dt, PLAYER_DRAG)
 
         # Update thrusters
+        self.rear_thrusterL.update()
         self.rear_thruster.update()
+        self.rear_thrusterR.update()
 
     def shoot(self):
         if self.shoot_timer > 0:
