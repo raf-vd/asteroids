@@ -166,7 +166,8 @@ def game_loop(asteroidfield, drawable, updatable, asteroids, shots, player, scor
         dt = clock.tick(FRAME_RATE) / 1000                                                      # Game speed control
 
 def init_game():                                                # Initialise base game objects
-    asteroidfield = AsteroidField()                                                             
+    asteroidfield = AsteroidField()         
+    LumpyAsteroid.velocity_multiplier = 1                                                    
     player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
     scoreboard = ScoreBoard(player.lives, STARTING_LEVEL)
     return asteroidfield, player, scoreboard

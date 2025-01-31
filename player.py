@@ -20,7 +20,8 @@ class Player(CircleShape):
         self.__upgrade_countdown_piercing = 0
         self.__upgrade_countdown_bulletsize = 0
         self.__respawn_countdown = 0
-        self.rotation = 0
+        self.angle = 0
+        self.last_rotation = 0
         self.shoot_timer = 0
         self.spawn_guard = PLAYER_SPAWN_SAFEGUARD
         self.lives = PLAYER_STARTING_LIVES
@@ -39,8 +40,8 @@ class Player(CircleShape):
         return self.__shot_size_multiplier
 
     def triangle(self):                     # calculate a triangle for player
-        forward = pygame.Vector2(0, 1).rotate(self.rotation)
-        right = pygame.Vector2(0, 1).rotate(self.rotation + 90) * self.radius / 1.5
+        forward = pygame.Vector2(0, 1).rotate(self.angle)
+        right = pygame.Vector2(0, 1).rotate(self.angle + 90) * self.radius / 1.5
         a = self.position + forward * self.radius * 1.25 # 25% correction on point a location to appear "better centered"
         b = self.position - forward * self.radius - right
         c = self.position - forward * self.radius + right
@@ -51,15 +52,30 @@ class Player(CircleShape):
             return False                
         self.wrap_screen()
         #pygame.draw.polygon(screen, self.colour, self.triangle(), 2)       # Original version drew a triangle, replaced by same shape & size image
-        r_img = pygame.transform.rotate(player_image, -self.rotation)       # Make sure image rotates with player
+        r_img = pygame.transform.rotate(player_image, -self.angle)       # Make sure image rotates with player
         r_img.set_alpha(self.alpha)                                         # Handle 'invulnerable oscilation'
         rect = r_img.get_rect()
         rect.center = self.position  
-        surface.blit(r_img, rect)                                            # Draw the actual image
+        surface.blit(r_img, rect)                                           # Draw the actual image
 
-        if int(self.shield_charge) > 0:
-            # Fluctuate shield transparancy for nice visual effect
-            pygame.draw.circle(surface, (150, 250, 150, random.randint(20, 80)), self.position, self.radius + 10 + int(self.shield_charge), int(self.shield_charge))
+        if int(self.shield_charge) > 0:                                     # Draw some fancy shields
+            base_radius = self.radius + 10                                  # Base size of shield from player
+            
+            # Create multiple circles with varying radii and alpha
+            for i in range(3):                                              # Number of ripple layers
+                wave_speed = 0.003                                          # Lower = slower waves
+                wave_amplitude = 8                                          # Higher = bigger waves (higer values cause collision detection to trigger seemingly too late)
+                # Constrain the wave effect to stay to circle that is the actual shield
+                raw_wave = math.sin(pygame.time.get_ticks() * wave_speed + i * 2) * wave_amplitude
+                wave_offset = max(-self.shield_charge/2, min(self.shield_charge/2, raw_wave))                
+
+                alpha_start = 100                                           # Starting alpha value
+                alpha_decrease = 30                                         # How much alpha decreases per layer
+                alpha = max(20, alpha_start - i * alpha_decrease)
+                color = (100, 200, 250, alpha)                              # # Shield color and drawing, RGB + alpha
+                shield_thickness = max(2, int(self.shield_charge/2))        # Thickness of shield line
+                
+                pygame.draw.circle(surface, color, self.position, base_radius + wave_offset + int(self.shield_charge), shield_thickness)
 
         # Show thrusters
         self.rear_thrusterL.draw()
@@ -67,45 +83,48 @@ class Player(CircleShape):
         self.rear_thrusterR.draw()
     
     def rotate(self, dt):                   # rotate the player (left, right)
-        self.rotation += PLAYER_TURN_SPEED * dt
-    
+        self.last_rotation = PLAYER_TURN_SPEED * dt  # Add this line
+        self.angle += PLAYER_TURN_SPEED * dt    
+        if self.last_rotation > 0:
+            self.rear_thrusterR.create_particles(4)
+        else:
+            self.rear_thrusterL.create_particles(4)
+
     def move(self, dt):                     # move the player (forward, back)
         if self.velocity.magnitude() < PLAYER_MAXIMUM_SPEED:            # Limit maximum speed
-            forward = pygame.Vector2(0, 1).rotate(self.rotation)
+            forward = pygame.Vector2(0, 1).rotate(self.angle)
             self.velocity += forward * PLAYER_ACCELERATION * dt
-
-        if dt > 0:                                                      # If moving forward (dt > 0), create thruster particles
-            self.rear_thrusterL.create_particles(5)
-            self.rear_thruster.create_particles(5)
-            self.rear_thrusterR.create_particles(5)
+        if dt > 0: self.rear_thruster.create_particles(4)              # If moving forward (dt > 0), create thruster particles
 
     def slow_down(self, dt, slow_factor):
-        if self.velocity.magnitude() < 0.1:                             # If velocity is very small, just stop completely
+        if self.velocity.magnitude() < 0.01:                             # If velocity is very small, just stop completely
             self.velocity = pygame.Vector2(0, 0)
         else:
             slowing_force = self.velocity.normalize() * slow_factor     
-            self.velocity -= slowing_force * dt                         # Reduce velocity more aggressively than natural drag
+            self.velocity -= slowing_force * dt                         # Reduce velocity natural drag or braking force in slow_factor
 
     def update(self, dt):                   # process inputs from keys and do all sorts of changes to player
 
-        if self.__respawn_countdown > 0:
-            self.__respawn_countdown -= dt
-            return False                    # Don't do anything while respawn cooldown is active
+        self.last_rotation = 0                              # Init rotation to keep track how much rotation there was in a frame
 
-        self.shoot_timer -= dt
+        if self.__respawn_countdown > 0:                    # Delay player respawn after death a short while (feels better)
+            self.__respawn_countdown -= dt
+            return False                                    # Don't do anything while respawn cooldown is active
+
+        self.shoot_timer -= dt                              # Reduce the cooldown on the player's ability to shoor
         
-        if self.spawn_guard > 0:
+        if self.spawn_guard > 0:                            # Change player transparancy when he respanws (fluctuating formula)
             self.alpha = 75 + int(125 * (math.sin(pygame.time.get_ticks() / 200) + 1) / 2)
             self.spawn_guard -= dt
         else:
-            self.alpha = 255
+            self.alpha = 255                                # Solid state again
 
-        if self.__upgrade_countdown_piercing > 0:
+        if self.__upgrade_countdown_piercing > 0:           # Limit buf duration
             self.__upgrade_countdown_piercing -= dt
         else:
             self.__piercing_active = False
 
-        if self.__upgrade_countdown_bulletsize > 0:
+        if self.__upgrade_countdown_bulletsize > 0:         # Limit buf duration
             self.__upgrade_countdown_bulletsize-= dt
         else:
             self.activate_upgrade(PowerUp.SMALLER_SHOT)
@@ -141,7 +160,7 @@ class Player(CircleShape):
             return
         self.shoot_timer = PLAYER_SHOOT_COOLDOWN
         shot = Shot(self.position.x, self.position.y, SHOT_RADIUS * self.__shot_size_multiplier, self.__piercing_active)
-        shot.velocity = pygame.Vector2(0, 1).rotate(self.rotation) * PLAYER_SHOOT_SPEED
+        shot.velocity = pygame.Vector2(0, 1).rotate(self.angle) * PLAYER_SHOOT_SPEED
 
     def check_collision(self, other):
 
@@ -279,7 +298,8 @@ class Player(CircleShape):
     def init_player(self, position, remaining_lives):       
         self.spawn_guard = PLAYER_SPAWN_SAFEGUARD           # Set timer to track respawn invincable duration (but visable)
         self.__respawn_countdown = 0                        
-        self.rotation = 0
+        self.angle = 0
+        self.last_rotation = 0
         self.position = position
         self.velocity = pygame.Vector2(0, 0)
         self.lives = remaining_lives                    

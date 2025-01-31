@@ -60,8 +60,10 @@ class Menu:
                             selected_option()
                         else:
                             return selected_option                                                  # Return the action
-                    elif event.key == pygame.K_ESCAPE: 
-                        return "back" if self.parent else "resume"                                 # Esc parent meny = back, Esc pause = resume
+                    elif event.key == pygame.K_ESCAPE and self.parent:
+                        return "back"
+                    # elif event.key == pygame.K_ESCAPE: 
+                    #     return "back" if self.parent else "resume"                                 # Esc parent meny = back, Esc pause = resume
 
                 self.draw_menu()
                 pygame.display.flip()

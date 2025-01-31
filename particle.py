@@ -1,4 +1,5 @@
 import math, pygame, random
+from constants import PLAYER_TURN_SPEED
 from resources import screen
 from enum import Enum
 
@@ -14,19 +15,19 @@ class Particle:
         self.current_life = self.lifetime
         self.size = 3
         self.color = color                              # orange-yellow by def
-        self.speed = random.uniform(1.5, 3)
+        self.speed = random.uniform(1.0, 2.0)
         self.angle = self.__get_angle(thruster_position)
 
     def __get_angle(self, thruster_position):
         match thruster_position:
             case ThrusterPosition.BACK:
-                return self.ship.rotation - 90 + random.uniform(-15, 15)
+                return self.ship.angle - 90 + random.uniform(-20, 20)
             case ThrusterPosition.LEFT_BACK:
-                return self.ship.rotation - 55 + random.uniform(-15, 15)
+                return self.ship.angle - 55 + random.uniform(-20, 20)
             case ThrusterPosition.RIGHT_BACK:
-                return self.ship.rotation - 125 + random.uniform(-15, 15)
+                return self.ship.angle - 125 + random.uniform(-20, 20)
             case _:                                                         # Default position = BACK
-                return self.ship.rotation - 90 + random.uniform(-15, 15)
+                return self.ship.angle - 90 + random.uniform(-20, 20)
 
     def __get_coordinates(self, thruster_position):
         match thruster_position:
@@ -37,14 +38,12 @@ class Particle:
 
             case ThrusterPosition.LEFT_BACK:
                 points = self.ship.triangle()
-                # back_point = points[1] + (points[2] - points[1]) * (1/8)
                 base_vector = points[2] - points[1]                         # Get direction vector along the base
                 base_direction = base_vector.normalize()                    # Normalize it
                 back_point = points[1] - (base_direction * 4)               # Move slightly left from points[1] (negative direction)                
 
             case ThrusterPosition.RIGHT_BACK:                                                       # Default position = BACK
                 points = self.ship.triangle()
-                # back_point = points[1] + (points[2] - points[1]) * (7/8)
                 base_vector = points[2] - points[1]                         # Get direction vector along the base
                 base_direction = base_vector.normalize()                    # Normalize it
                 back_point = points[2] + (base_direction * 4)               # Move slightly left from points[1] (negative direction)                
@@ -55,10 +54,27 @@ class Particle:
 
         return back_point.x, back_point.y
 
-    def update(self):                                   # Particles now move "forward" in the cone
+    # def update(self, dt):                                   # Particles now move "forward" in the cone
+    #     self.x += math.cos(math.radians(self.angle)) * self.speed + self.ship.velocity.x
+    #     self.y += math.sin(math.radians(self.angle)) * self.speed + self.ship.velocity.y
+    #     self.current_life -= 1
+
+    def update(self):
+        # Original movement code
         self.x += math.cos(math.radians(self.angle)) * self.speed + self.ship.velocity.x
         self.y += math.sin(math.radians(self.angle)) * self.speed + self.ship.velocity.y
-        self.current_life -= 1
+        
+        # Base life reduction
+        life_reduction = 1
+        
+        # Increase life reduction when rotating
+        if hasattr(self.ship, 'last_rotation') and self.ship.last_rotation != 0:
+            # Scale life reduction based on rotation speed
+            rotation_factor = 35 * abs(self.ship.last_rotation) / PLAYER_TURN_SPEED
+            life_reduction = 1 + rotation_factor
+        
+        self.current_life -= life_reduction
+        # self.current_life -= 1
 
     def is_alive(self):
         return self.current_life > 0
