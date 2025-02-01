@@ -22,7 +22,7 @@ class ScoreBoard():
 
             # setup bar display parameters
             bar_width, bar_height = 180, 20  
-            bar_x, bar_y = SCREEN_WIDTH - bar_width - 10, SCREEN_HEIGHT - bar_height - 10  # Bottom right corner with padding
+            bar_x, bar_y = SCREEN_WIDTH - bar_width - 10, 10  # Top right corner
 
             # Determine the background color and text based on the shield's state
             if player.shield_charge == 0:
