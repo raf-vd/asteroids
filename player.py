@@ -7,6 +7,7 @@ from enum import Enum
 from explosion import Explosion
 from particle import ParticleSystem, ThrusterPosition
 from shot import Shot
+from speedometer import Speedometer
 
 # Possible powerups in an enum
 PowerUp = Enum("PowerUp", ["PIERCING", "BIGGER_SHOT", "SMALLER_SHOT", "INCREASE_SHIELD", "DECREASE_SHIELD"])
@@ -29,6 +30,7 @@ class Player(CircleShape):
         self.shield_regeneration = 0
         self.non_hit_scoring_streak = 0
         self.alpha = 255
+        self.speedometer = Speedometer()
         self.rear_thrusterL = ParticleSystem(self, ThrusterPosition.LEFT_BACK)
         self.rear_thruster = ParticleSystem(self, ThrusterPosition.BACK)
         self.rear_thrusterR = ParticleSystem(self, ThrusterPosition.RIGHT_BACK)
@@ -49,10 +51,11 @@ class Player(CircleShape):
 
     def draw(self):                                                         # override draw from CircleShape
         if self.__respawn_countdown > 0:                                    # Don't show player while respawn cooldown is active
+            self.speedometer.draw(True)                                     # If player is waiting for respawn: Draw broken speedometer
             return False                
         self.wrap_screen()
         #pygame.draw.polygon(screen, self.colour, self.triangle(), 2)       # Original version drew a triangle, replaced by same shape & size image
-        r_img = pygame.transform.rotate(player_image, -self.angle)       # Make sure image rotates with player
+        r_img = pygame.transform.rotate(player_image, -self.angle)          # Make sure image rotates with player
         r_img.set_alpha(self.alpha)                                         # Handle 'invulnerable oscilation'
         rect = r_img.get_rect()
         rect.center = self.position  
@@ -77,10 +80,11 @@ class Player(CircleShape):
                 
                 pygame.draw.circle(surface, color, self.position, base_radius + wave_offset + int(self.shield_charge), shield_thickness)
 
-        # Show thrusters
+        # Show thrusters & speedometer
         self.rear_thrusterL.draw()
         self.rear_thruster.draw()
         self.rear_thrusterR.draw()
+        self.speedometer.draw()
     
     def rotate(self, dt):                   # rotate the player (left, right)
         self.last_rotation = PLAYER_TURN_SPEED * dt  # Add this line
@@ -150,10 +154,11 @@ class Player(CircleShape):
         if self.velocity.magnitude() > 0:
             self.slow_down(dt, PLAYER_DRAG)
 
-        # Update thrusters
+        # Update thrusters & speedometer
         self.rear_thrusterL.update()
         self.rear_thruster.update()
         self.rear_thrusterR.update()
+        self.speedometer.update(self.velocity)
 
     def shoot(self):
         if self.shoot_timer > 0:

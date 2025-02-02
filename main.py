@@ -89,14 +89,16 @@ def update_objects(updatable, dt):
         obj.update(dt)
 
 def draw_objects(drawable):
-    for obj in drawable:                                        # draw explosions last, skip them here
-        if (isinstance(obj, Player) or                          
+    for obj in drawable:                                # Draw Shots & Asteroids first
+        if (isinstance(obj, Shot) or                          
             isinstance(obj, LumpyAsteroid)):
             obj.draw()                                              
-        elif not isinstance(obj, Explosion):                    
-                obj.draw() 
+
+    for play in drawable:                             # Draw player next (and speedometer)
+        if isinstance(play, Player):   
+            play.draw()
                 
-    for exp in drawable:                                        # draw explosions last (to be on top)
+    for exp in drawable:                                # draw explosions last (to be on to of all)
         if isinstance(exp, Explosion):   
             exp.draw()
 

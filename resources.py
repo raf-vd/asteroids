@@ -79,11 +79,20 @@ if True:
   # relative location
     background_path = resource_path("image/space.jpg")
     player_image_path = resource_path("image/ship.png")
+    speedometer_image_path = resource_path("image/speedometer.png")
+    needle_image_path = resource_path("image/needle_centered.png")
+    broken_speedometer_path = resource_path("image/broken_glass_circle.png")
 
   # dynamic pathing
     background = pygame.image.load(background_path)
     player_image = pygame.image.load(player_image_path).convert_alpha()
     player_image = pygame.transform.scale(player_image, (40, 55))
+    speedometer_image = pygame.image.load(speedometer_image_path).convert_alpha()
+    speedometer_image = pygame.transform.scale(speedometer_image, (225, 105))
+    needle_image = pygame.image.load(needle_image_path).convert_alpha()
+    needle_image = pygame.transform.scale(needle_image, (160, 10))
+    broken_speedometer = pygame.image.load(broken_speedometer_path).convert_alpha()
+    broken_speedometer = pygame.transform.scale(broken_speedometer, (220, 100))
 
 # Frames
     explosion_frames = load_frames(9, "image/explosion/explosion", "png")

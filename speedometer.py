@@ -1,34 +1,35 @@
-import math
 import pygame
 from constants import PLAYER_MAXIMUM_SPEED, SCREEN_HEIGHT, SCREEN_WIDTH
-from resources import surface
+from resources import broken_speedometer, needle_image, speedometer_image, screen, surface
 
 class Speedometer:
-    def __init__(self):
-        # Position in bottom-right corner (adjust as needed)
-        self.center_x = SCREEN_WIDTH - 60
-        self.center_y = SCREEN_HEIGHT - 60
-        self.radius = 50
-        
-        # Angle ranges for the needle
-        self.min_angle = math.pi * 0.75  # 135 degrees
-        self.max_angle = math.pi * 0.25  # 45 degrees
-        
-    def draw(self, velocity):
-        # Draw the static background arc
-        pygame.draw.arc(surface, (100, 100, 100), 
-                       (self.center_x - self.radius, 
-                        self.center_y - self.radius,
-                        self.radius * 2, self.radius * 2),
-                        self.min_angle, self.max_angle, 3)
-        
-        # Calculate needle angle based on velocity
-        speed_ratio = min(1.0, velocity.length() / PLAYER_MAXIMUM_SPEED)
-        current_angle = self.min_angle + (self.max_angle - self.min_angle) * speed_ratio
-        
-        # Draw needle
-        end_x = self.center_x + math.cos(current_angle) * (self.radius - 10)
-        end_y = self.center_y + math.sin(current_angle) * (self.radius - 10)
-        pygame.draw.line(surface, (255, 0, 0), 
-                        (self.center_x, self.center_y),
-                        (end_x, end_y), 2)
+    def __init__(self, speed=0):
+        self.meter_x = SCREEN_WIDTH - speedometer_image.get_width()                         # Coords for the dial background
+        self.meter_y = SCREEN_HEIGHT - speedometer_image.get_height()
+        self.center_x = SCREEN_WIDTH - 35 - (needle_image.get_width() / 2)                  # Coords for the centre of the needle 
+        self.center_y = SCREEN_HEIGHT - needle_image.get_height()
+        self.speed = speed                                                                  # Speed = 0 at start
+        self.angle = 0                                                                      # Angle = 0 at start
+
+    def update(self, speed):
+        self.speed = speed.magnitude()                                                      # Receive the new speed
+        self.angle = - (180 * (self.speed / PLAYER_MAXIMUM_SPEED))                          # Calculate sppeed as % of angle
+
+    def draw(self, broken=False):
+        back = pygame.Surface((speedometer_image.get_width(), speedometer_image.get_height() + 7), pygame.SRCALPHA) # Create surface to draw red background (slightly larger than the image to create some room for drawing around it)
+        intensity = int(75 * (self.speed / PLAYER_MAXIMUM_SPEED))                                                   # Scale intensity from 0 to 75
+
+        center = (back.get_width() // 2, back.get_height())                                 # Draw a filled circle on the background
+        radius = (0.97 * back.get_width()) // 2 
+        pygame.draw.circle(back, (255, 0, 0, intensity), center, radius)                    
+        pygame.draw.circle(back, (25, 25, 0, 128), center, radius + 2, 4)                    # Draw a border circle on the background
+        surface.blit(back, (self.meter_x, self.meter_y))
+
+        surface.blit(speedometer_image, (self.meter_x, self.meter_y))                       # Draw the background dial
+        rotated_needle = pygame.transform.rotate(needle_image, self.angle)                  # Rotate the needle image based on the current angle
+        rotated_rect = rotated_needle.get_rect(center=(self.center_x, self.center_y))       # Get the rotated image's rect
+        surface.blit(rotated_needle, rotated_rect.topleft)                                  # Blit the rotated needle on the surface
+
+        if broken:                                                                          
+            surface.blit(broken_speedometer, (self.meter_x + 5, self.meter_y + 5))          # Overlay broken glass       
+
