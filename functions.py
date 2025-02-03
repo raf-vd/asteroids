@@ -49,3 +49,19 @@ def render_line(font, text, bar_surface, colour, vertical_offset=0):
 def biased_random():
     r = random.random()     # Raw random from 0 to 1
     return r * r            # Square or cube it to bias towards 0
+
+def scale_to_circle(image, circle_radius):
+    # Calculate the new size (maintain aspect ratio)
+    original_size = image.get_size()
+    scale = (circle_radius * 2) / max(original_size)
+    new_width = int(original_size[0] * scale)
+    new_height = int(original_size[1] * scale)
+    
+    # Scale the image
+    scaled_image = pygame.transform.smoothscale(image, (new_width, new_height))
+    return scaled_image
+
+def apply_tint(image, tint_color):
+    tinted = image.copy()
+    tinted.fill(tint_color, special_flags=pygame.BLEND_RGBA_MULT)
+    return tinted

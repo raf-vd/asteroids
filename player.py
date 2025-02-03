@@ -52,8 +52,10 @@ class Player(CircleShape):
     def draw(self):                                                         # override draw from CircleShape
         if self.__respawn_countdown > 0:                                    # Don't show player while respawn cooldown is active
             self.speedometer.draw(True)                                     # If player is waiting for respawn: Draw broken speedometer
-            return False                
-        self.wrap_screen()
+            return False  
+                      
+        self.wrap_screen()                                                  # Handle screen_wrapping (inherited method)
+
         #pygame.draw.polygon(screen, self.colour, self.triangle(), 2)       # Original version drew a triangle, replaced by same shape & size image
         r_img = pygame.transform.rotate(player_image, -self.angle)          # Make sure image rotates with player
         r_img.set_alpha(self.alpha)                                         # Handle 'invulnerable oscilation'

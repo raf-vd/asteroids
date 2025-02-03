@@ -77,7 +77,6 @@ if True:
 
 # Images    
   # relative location
-    asteroid_1_path = resource_path("image/rock/asteroid_1.png")
     background_path = resource_path("image/space.jpg")
     player_image_path = resource_path("image/ship.png")
     speedometer_image_path = resource_path("image/speedometer.png")
@@ -85,7 +84,6 @@ if True:
     broken_speedometer_path = resource_path("image/broken_glass_circle.png")
 
   # dynamic pathing
-    asteroid_1_image = pygame.image.load(asteroid_1_path).convert_alpha()
     background = pygame.image.load(background_path)
     player_image = pygame.image.load(player_image_path).convert_alpha()
     player_image = pygame.transform.scale(player_image, (40, 55))
@@ -101,3 +99,4 @@ if True:
     player_explosion_frames = load_frames(25, "image/explosion/whitePuff", "png")
     shot_frames = load_frames(9, "image/explosion/fart", "png")
     piercing_shot_frames = load_frames(9, "image/explosion/flash", "png")
+    asteroid_frames = load_frames(6, "image/asteroid/asteroid", "png")

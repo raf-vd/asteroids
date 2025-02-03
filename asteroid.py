@@ -2,15 +2,16 @@ import pygame
 import random
 import math
 from constants import *
-from resources import asteroid_break_channel, crack_lump_sound, crack_main_sound, surface
+from functions import apply_tint, scale_to_circle
+from resources import asteroid_frames, asteroid_break_channel, crack_lump_sound, crack_main_sound, surface
 from circleshape import CircleShape
 from explosion import Explosion
-
 
 class LumpyAsteroid(CircleShape):
     def __init__(self, x, y, radius, special=False, max_lumps=6):
         super().__init__(x, y, radius)
         self.special = special
+        self.image = asteroid_frames[random.randint(0,5)]
         self.lumps = self.generate_random_lumps(max_lumps)
         if self.special:
             self.score_value = 0                                # Special asteroids are smaller and have no value => nasty
@@ -19,10 +20,24 @@ class LumpyAsteroid(CircleShape):
         self.colour = self.get_colour(random.randint(190, 200))
 
     def draw(self):
-        self.wrap_screen()
-        pygame.draw.circle(surface, self.colour, self.position, self.radius, 0)
+        self.wrap_screen()                                                              # Handle asteroid wrapping around screen
+
+        scaled_asteroid = scale_to_circle(self.image, self.radius)                      # Resize base image to match radius
+        image_rect = scaled_asteroid.get_rect()
+        image_rect.center = (self.position.x, self.position.y)
+        tinted_asteroid = apply_tint(scaled_asteroid, self.colour)                      # Tint the image to match asteroid kind
+        surface.blit(tinted_asteroid, image_rect)                                       # Blit the image to the surface
+        # pygame.draw.circle(surface, (255, 0, 0), (self.position.x, self.position.y), self.radius, 1)      #### VISUAL CHECK, REMOVE WHEN WORKING AS INTENDED  ####
+        # pygame.draw.circle(surface, self.colour, self.position, self.radius, 0)                           #### OLD SYSTEM FOR DRAWING ASTEROID                ####
+
         for lump in self.lumps:
-            pygame.draw.circle(surface, lump.colour, lump.position, lump.radius, 0)
+            scaled_lump = scale_to_circle(lump.image, lump.radius)                       # Resize base image to match radius
+            image_rect = scaled_lump.get_rect()
+            image_rect.center = (lump.position.x, lump.position.y)
+            tinted_lump = apply_tint(scaled_lump, lump.colour)                          # Tint the image to match asteroid kind
+            surface.blit(tinted_lump, image_rect)                                       # Blit the image to the surface
+            # pygame.draw.circle(surface, (255, 0, 0), (lump.position.x, lump.position.y), lump.radius, 1)  #### VISUAL CHECK, REMOVE WHEN WORKING AS INTENDED  ####
+            # pygame.draw.circle(surface, lump.colour, lump.position, lump.radius, 0)                       #### OLD SYSTEM FOR DRAWING ASTEROID                ####
 
     def update(self, dt):
         self.position +=  self.velocity * dt * LumpyAsteroid.velocity_multiplier
@@ -66,6 +81,7 @@ class LumpyAsteroid(CircleShape):
             # create the lump
             lumps.append(CircleShape(self.position.x + dx, self.position.y + dy, lump_radius))
             lumps[-1].colour = self.get_colour(random.randint(180, 210))
+            lumps[-1].image = asteroid_frames[random.randint(0,5)]
 
         # return list of lumps
         return lumps
