@@ -35,7 +35,7 @@ class AsteroidField(pygame.sprite.Sprite):
         asteroid = LumpyAsteroid(position.x, position.y, radius, special, max_lumps)
         asteroid.velocity = velocity
 
-    def super_spawn(self, count, factor):
+    def super_spawn(self, count):
         if count < 2: count = 2                                         # Force at least double spawn 
         for i in range(count):
             # Asteroid will have a radius that is half the min size and will have more lumps

@@ -1,8 +1,75 @@
+import datetime
 import pygame
+import random
 from constants import *
+from functions import scale_to_circle
+from resources import boss_bullet_frames, surface
+from circleshape import CircleShape
+
 
 class Boss:
-    def __init__(self, image, x, y, width, height, hp):
+    def __init__(self, x, y, image):
+        self.position = pygame.Vector2(x, y)
+        self.framecount = 0                                 # Use to manipulate speed related actions
+        self.vertical = 1                                   # Moving Up or Downn
+        self.horizontal = 1                                 # Moving Left or Right
+        self.target_x1 = self.position.x - 150              # Boss most left point
+        self.target_x2 = self.position.x + 150              # Boss most right point
+        self.target_y1 = 125                                # Boss low point
+        self.target_y2 = self.target_y1 - 50                # Boss high point
+        self.image = image  
+        self.image.set_alpha(225)                           # Set transparency, values range from 0 (completely transparent) to 255 (completely opaque)
+        self.mask = pygame.mask.from_surface(self.image)    # Create a mask from the non-transparent pixel
+        self.ready = False
+        self.bullets = []
+        self.boss_bullet_cooldown = 2                       # Time between boss bullets
+
+    def draw(self):
+        surface.blit(self.image, self.position)
+        for bullet in self.bullets:
+            bullet.draw()
+
+    def update(self, dt):
+        self.basic_movement()                                                                                               # Move around a bit
+        if not self.ready: return                                                                                           # Fully spawn/descend first
+
+        if self.boss_bullet_cooldown > 0:
+            self.boss_bullet_cooldown -= dt
+        else:
+            self.boss_bullet_cooldown = 2
+            dx = random.randint(int(self.position.x) - 200, int(self.position.x) + 200)
+            self.bullets.append(BossBullet(self.image.get_width() / 2 + dx, self.position.y + self.image.get_height()))     # spawn a bullet every 120 frames
+            # print(f"append bullet at {datetime.datetime.now()}")
+
+        for bullet in self.bullets:
+            bullet.update(dt)
+
+    def basic_movement(self):
+        self.framecount += 1                                        # Speed controlled by framerate
+
+        if not self.ready:                                          # Initial descent/entry
+            if self.framecount % 2 == 0: return                     # Reduce descendin speed (1x every 2 frames)
+            self.framecount = 0                                     # Reset framecount
+            self.position.y += 1                                    # Move down
+            if self.position.y == self.target_y1: self.ready =True  # Reached descent/entry
+            return 
+        
+        # print(f"framecount: {self.framecount}, % = {self.framecount % 300}")
+        if self.framecount % 300 == 0:                              # Every 600 frames => randomlt change directions (or not)
+            self.horizontal = random.choice([1, -1])
+            self.vertical = random.choice([1, -1])
+            self.framecount = 0
+
+        if self.framecount % 2 == 0: return                    # Reduce descendin speed (1x every 2 frames)
+        if self.position.y == self.target_y1: self.vertical = -1    # Control up/down
+        if self.position.y == self.target_y2: self.vertical = 1 
+        self.position.y += 1 * self.vertical                        # Move vertically
+
+        if self.position.x == self.target_x1: self.horizontal = 1   # Control left/right
+        if self.position.x == self.target_x2: self.horizontal = -1 
+        self.position.x += 1 * self.horizontal                      # Move horizontally
+
+    def BOOTS__init__(self, image, x, y, width, height, hp):
         self.image = image
         self.x = x
         self.y = y
@@ -22,12 +89,7 @@ class Boss:
         self.shield_hp = 200  # Shield health
         self.max_shield_hp = 200  # For visual purposes        
 
-    def enter_field(self):
-        """Move the boss down until it reaches its target position."""
-        if self.y < self.target_y:
-            self.y += 2  # Adjust speed as desired
-
-    def draw(self, surface):
+    def BOOTS_draw(self, surface):
         """Draw the boss and its parts."""
         if self.alive:
             # Draw the main body
@@ -41,7 +103,7 @@ class Boss:
             
             self.draw_shield(surface)
             self.draw_bullets(surface)
-            
+
     def reduce_hp(self, damage):
         self.hp -= damage
         if self.hp <= 0:
@@ -93,10 +155,6 @@ class Boss:
             shield_color = (0, 128, 255)  # Blue-ish hue
             pygame.draw.ellipse(surface, shield_color, 
                                  (self.x - 20, self.y - 20, self.width + 40, self.height + 40), 3)
-
-    def update(self):
-        """Update the boss behavior and remove destroyed parts."""
-        self.enter_field()
         
         # Handle turret mechanics
         if self.parts["left_wing"]["hp"] > 0:
@@ -111,18 +169,41 @@ class Boss:
 
         self.update_bullets()
 
-class BossBullet:
-    def __init__(self, x, y, speed):
-        self.rect = pygame.Rect(x, y, 10, 20)  # Adjust size as needed
+class BossBullet(CircleShape):
+    def __init__(self, x, y, radius=25, speed=2):
+        super().__init__(x, y, radius)
+        self.frames =  boss_bullet_frames
+        self.normalize_frames()                                 # 1x untill I have decent frame images
+        self.current_frame = 0
+        self.image = pygame.transform.scale(self.frames[self.current_frame], (radius * 3.75, radius * 3.75))
+        self.rect = self.image.get_rect(center=self.position)
         self.speed = speed
+        self.animation_speed = 0.025
+        self.timer = 0        
 
-    def update(self):
-        """Move the bullet downward."""
-        self.rect.y += self.speed
+    def normalize_frames(self):
+        for i in range(len(self.frames)):
+            self.frames[i] = scale_to_circle(self.frames[i], self.radius)
 
-    def draw(self, surface):
-        pygame.draw.rect(surface, (255, 0, 0), self.rect)  # Red bullets
+    def update(self, dt):
+        self.position.y += self.speed                           # Move bullet downwards
+        self.timer += dt
+        if self.timer >= self.animation_speed:
+            self.timer = 0
+            self.current_frame += 1
+            if self.current_frame == len(self.frames):
+                self.current_frame = 0
+            self.image = self.frames[self.current_frame]
 
+    def draw(self):
+        if self.is_off_screen():
+            self.kill()
+        else:
+            # keeping this commented out to verify collision with actual radius vs image size
+            rect = self.image.get_rect()
+            rect.center = self.position
+            surface.blit(self.image, rect)
+            # pygame.draw.circle(surface, "white", self.position, self.radius , 1)
 
 class TrackingBullet:
     def __init__(self, x, y, target_x, target_y, speed):

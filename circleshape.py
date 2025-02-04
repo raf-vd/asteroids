@@ -26,9 +26,13 @@ class CircleShape(pygame.sprite.Sprite):
     def update(self, dt): # sub-classes must override
         pass
 
-    def check_collision(self, other):
+    def check_collision(self, other): # Circle ti circle collision check
         distance = self.position.distance_to(other.position)
         return distance <= self.radius + other.radius
+
+    def circle_vs_rect(self, rect): # Circle to Rectangle collision check
+        expanded_rect = rect.inflate(self.radius * 2,self.radius * 2)           # Expanded rectangle to include the circle’s radius
+        return expanded_rect.collidepoint(self.position.x, self.position.y)
 
     # used for killing shots
     def is_off_screen(self):

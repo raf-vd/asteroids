@@ -65,3 +65,8 @@ def apply_tint(image, tint_color):
     tinted = image.copy()
     tinted.fill(tint_color, special_flags=pygame.BLEND_RGBA_MULT)
     return tinted
+
+def create_circle_mask(radius): # Create a circle
+    surf = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
+    pygame.draw.circle(surf, (255, 255, 255), (radius, radius), radius)
+    return pygame.mask.from_surface(surf)

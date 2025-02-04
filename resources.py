@@ -78,6 +78,7 @@ if True:
 # Images    
   # relative location
     background_path = resource_path("image/space.jpg")
+    boss_image_path = resource_path("image/boss_try2.png")
     player_image_path = resource_path("image/ship.png")
     speedometer_image_path = resource_path("image/speedometer.png")
     needle_image_path = resource_path("image/needle_centered.png")
@@ -85,6 +86,8 @@ if True:
 
   # dynamic pathing
     background = pygame.image.load(background_path)
+    boss_image = pygame.image.load(boss_image_path).convert_alpha()
+    boss_image = pygame.transform.scale(boss_image, (500, 150))
     player_image = pygame.image.load(player_image_path).convert_alpha()
     player_image = pygame.transform.scale(player_image, (40, 55))
     speedometer_image = pygame.image.load(speedometer_image_path).convert_alpha()
@@ -95,8 +98,9 @@ if True:
     broken_speedometer = pygame.transform.scale(broken_speedometer, (220, 100))
 
 # Frames
+    asteroid_frames = load_frames(6, "image/asteroid/asteroid", "png")
+    boss_bullet_frames = load_frames(8, "image/bullet/bbullet", "png")
     explosion_frames = load_frames(9, "image/explosion/explosion", "png")
+    piercing_shot_frames = load_frames(9, "image/explosion/flash", "png")
     player_explosion_frames = load_frames(25, "image/explosion/whitePuff", "png")
     shot_frames = load_frames(9, "image/explosion/fart", "png")
-    piercing_shot_frames = load_frames(9, "image/explosion/flash", "png")
-    asteroid_frames = load_frames(6, "image/asteroid/asteroid", "png")
