@@ -17,7 +17,8 @@ class LumpyAsteroid(CircleShape):
             self.score_value = 0                                # Special asteroids are smaller and have no value => nasty
         else:
             self.score_value = 1800 / self.radius
-        self.colour = self.get_colour(random.randint(190, 200))
+        # self.colour = self.get_colour(random.randint(190, 200))
+        self.colour = self.get_colour(random.randint(210, 220))
 
     def draw(self):
         self.wrap_screen()                                                              # Handle asteroid wrapping around screen
@@ -46,17 +47,21 @@ class LumpyAsteroid(CircleShape):
 
     def get_colour(self, transparency=255):
         if self.special:
-            return (random.randint(200, 210), random.randint(0, 10), random.randint(200, 210), transparency)
+            # return (random.randint(200, 210), random.randint(0, 10), random.randint(200, 210), transparency)
+            return (random.randint(90, 110), random.randint(0, 20), random.randint(90, 110), transparency)
 
         if self.radius == ASTEROID_MAX_RADIUS:
             # return "yellow"
-            return (random.randint(200, 255), random.randint(200, 255), random.randint(0, 50), transparency)
+            # return (random.randint(200, 255), random.randint(200, 255), random.randint(0, 50), transparency)
+            return (random.randint(75, 125), random.randint(75, 125), random.randint(0, 25), transparency)
         elif self.radius > ASTEROID_MIN_RADIUS:
             # return "orange"
-            return (random.randint(200, 255), random.randint(100, 150), random.randint(0, 50), transparency)
+            # return (random.randint(200, 255), random.randint(100, 150), random.randint(0, 50), transparency)
+            return (random.randint(150, 200), random.randint(50, 100), random.randint(0, 25), transparency)
         else:
             # return "red"
-            return (random.randint(200,255), random.randint(0, 50), random.randint(0, 50), transparency)
+            # return (random.randint(200,255), random.randint(0, 50), random.randint(0, 50), transparency)
+            return (random.randint(100,150), random.randint(0, 25), random.randint(0, 25), transparency)
 
     def generate_random_lumps(self, max_lumps=6):
         num_lumps = random.randint(3, max_lumps)
