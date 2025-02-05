@@ -79,7 +79,7 @@ if True:
   # relative location
     background_path = resource_path("image/space.jpg")
     boss_image_path = resource_path("image/boss_try2.png")
-    player_image_path = resource_path("image/ship.png")
+    player_image_path = resource_path("image/ship2.png")
     speedometer_image_path = resource_path("image/speedometer.png")
     needle_image_path = resource_path("image/needle_centered.png")
     broken_speedometer_path = resource_path("image/broken_glass_circle.png")

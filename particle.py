@@ -3,7 +3,7 @@ from constants import PLAYER_TURN_SPEED
 from resources import screen
 from enum import Enum
 
-ThrusterPosition = Enum("ThrusterPosition", ["BACK","LEFT_BACK", "RIGHT_BACK"])
+ThrusterPosition = Enum("ThrusterPosition", ["BACK", "LEFT_FRONT", "LEFT_BACK", "RIGHT_FRONT", "RIGHT_BACK"])
 
 
 class Particle:
@@ -26,6 +26,10 @@ class Particle:
                 return self.ship.angle - 55 + random.uniform(-20, 20)
             case ThrusterPosition.RIGHT_BACK:
                 return self.ship.angle - 125 + random.uniform(-20, 20)
+            case ThrusterPosition.LEFT_FRONT:
+                return self.ship.angle + 55 + random.uniform(-20, 20)
+            case ThrusterPosition.RIGHT_FRONT:
+                return self.ship.angle + 125 + random.uniform(-20, 20)
             case _:                                                         # Default position = BACK
                 return self.ship.angle - 90 + random.uniform(-20, 20)
 
@@ -36,13 +40,31 @@ class Particle:
                 points = self.ship.triangle()
                 back_point = (points[1] + points[2]) / 2                    # BACK = centre of base triangle
 
+            case ThrusterPosition.LEFT_FRONT:
+                points = self.ship.triangle()
+                side_vector = points[0] - points[1]  # Vector along left side
+                side_direction = side_vector.normalize()
+                # Adjust the multiplier to move thruster up/down the side
+                # 0.0 would be at points[1] (bottom)
+                # 1.0 would be at points[0] (top)
+                back_point = points[1] + (side_direction * side_vector.length() * 0.7)  # Example: 70% up the side
+
+            case ThrusterPosition.RIGHT_FRONT:
+                points = self.ship.triangle()
+                side_vector = points[0] - points[2]  # Vector along left side
+                side_direction = side_vector.normalize()
+                # Adjust the multiplier to move thruster up/down the side
+                # 0.0 would be at points[1] (bottom)
+                # 1.0 would be at points[0] (top)
+                back_point = points[2] + (side_direction * side_vector.length() * 0.7)  # Example: 70% up the side
+
             case ThrusterPosition.LEFT_BACK:
                 points = self.ship.triangle()
                 base_vector = points[2] - points[1]                         # Get direction vector along the base
                 base_direction = base_vector.normalize()                    # Normalize it
                 back_point = points[1] - (base_direction * 4)               # Move slightly left from points[1] (negative direction)                
 
-            case ThrusterPosition.RIGHT_BACK:                                                       # Default position = BACK
+            case ThrusterPosition.RIGHT_BACK:                                                       
                 points = self.ship.triangle()
                 base_vector = points[2] - points[1]                         # Get direction vector along the base
                 base_direction = base_vector.normalize()                    # Normalize it
@@ -53,11 +75,6 @@ class Particle:
                 back_point = (points[1] + points[2]) / 2
 
         return back_point.x, back_point.y
-
-    # def update(self, dt):                                   # Particles now move "forward" in the cone
-    #     self.x += math.cos(math.radians(self.angle)) * self.speed + self.ship.velocity.x
-    #     self.y += math.sin(math.radians(self.angle)) * self.speed + self.ship.velocity.y
-    #     self.current_life -= 1
 
     def update(self):
         # Original movement code

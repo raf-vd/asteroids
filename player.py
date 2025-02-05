@@ -21,6 +21,8 @@ class Player(CircleShape):
         self.__upgrade_countdown_piercing = 0
         self.__upgrade_countdown_bulletsize = 0
         self.__respawn_countdown = 0
+        self.__strafe_active = False
+        self.__boss_active = False
         self.angle = 0
         self.last_rotation = 0
         self.shoot_timer = 0
@@ -31,10 +33,24 @@ class Player(CircleShape):
         self.non_hit_scoring_streak = 0
         self.alpha = 255
         self.speedometer = Speedometer()
+        self.front_thrusterL = ParticleSystem(self, ThrusterPosition.LEFT_FRONT)
+        self.front_thrusterR = ParticleSystem(self, ThrusterPosition.RIGHT_FRONT)
         self.rear_thrusterL = ParticleSystem(self, ThrusterPosition.LEFT_BACK)
         self.rear_thruster = ParticleSystem(self, ThrusterPosition.BACK)
         self.rear_thrusterR = ParticleSystem(self, ThrusterPosition.RIGHT_BACK)
  
+    def toggle_strafe(self):
+        self.__strafe_active = not self.__strafe_active
+
+    def strafe_active(self):
+        return self.__strafe_active
+
+    def toggle_boss_mode(self):
+        self.__boss_active = not self.__boss_active
+
+    def boss_active(self):
+        return self.__boss_active
+
     def piercing_active(self):
         return self.__piercing_active
 
@@ -83,6 +99,8 @@ class Player(CircleShape):
                 pygame.draw.circle(surface, color, self.position, base_radius + wave_offset + int(self.shield_charge), shield_thickness)
 
         # Show thrusters & speedometer
+        self.front_thrusterL.draw()
+        self.front_thrusterR.draw()
         self.rear_thrusterL.draw()
         self.rear_thruster.draw()
         self.rear_thrusterR.draw()
@@ -96,11 +114,34 @@ class Player(CircleShape):
         else:
             self.rear_thrusterL.create_particles(4)
 
+    def strafe_or_rotate(self, keys, dt):
+        if self.strafe_active():                                                  # swap controls
+            if keys[pygame.K_q] or keys[pygame.K_LEFT]:     self.strafe(dt)
+            if keys[pygame.K_d] or keys[pygame.K_RIGHT]:    self.strafe(-dt)
+            if keys[pygame.K_a]:                            self.rotate(-dt)
+            if keys[pygame.K_e]:                            self.rotate(dt)
+        else:                                                                   # original controls
+            if keys[pygame.K_q] or keys[pygame.K_LEFT]:     self.rotate(-dt)
+            if keys[pygame.K_d] or keys[pygame.K_RIGHT]:    self.rotate(dt)
+            if keys[pygame.K_a]:                            self.strafe(dt)
+            if keys[pygame.K_e]:                            self.strafe(-dt)
+            
     def move(self, dt):                     # move the player (forward, back)
         if self.velocity.magnitude() < PLAYER_MAXIMUM_SPEED:            # Limit maximum speed
             forward = pygame.Vector2(0, 1).rotate(self.angle)
             self.velocity += forward * PLAYER_ACCELERATION * dt
         if dt > 0: self.rear_thruster.create_particles(4)              # If moving forward (dt > 0), create thruster particles
+
+    def strafe(self, dt):
+        if self.velocity.magnitude() < PLAYER_MAXIMUM_SPEED:            # Limit maximum speed
+            side = pygame.Vector2(1, 0).rotate(self.angle)
+            self.velocity += side * PLAYER_ACCELERATION * dt
+        if dt < 0: 
+            self.front_thrusterL.create_particles(4)              # If strafing right (dt < 0), create thruster particles
+            self.rear_thrusterL.create_particles(4)              
+        if dt > 0:
+            self.front_thrusterR.create_particles(4)              # If strafinf left (dt > 0), create thruster particles
+            self.rear_thrusterR.create_particles(4)
 
     def slow_down(self, dt, slow_factor):
         if self.velocity.magnitude() < 0.01:                             # If velocity is very small, just stop completely
@@ -142,21 +183,34 @@ class Player(CircleShape):
 
         # Process input
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_q] or keys[pygame.K_LEFT]:     self.rotate(-dt)
-        if keys[pygame.K_d] or keys[pygame.K_RIGHT]:    self.rotate(dt)
+        # if keys[pygame.K_q] or keys[pygame.K_LEFT]:     self.rotate(-dt)
+        # if keys[pygame.K_d] or keys[pygame.K_RIGHT]:    self.rotate(dt)
+        # if keys[pygame.K_a]:                            self.strafe(dt)
+        # if keys[pygame.K_e]:                            self.strafe(-dt)
         if keys[pygame.K_z] or keys[pygame.K_UP]:       self.move(dt)
         if keys[pygame.K_s] or keys[pygame.K_DOWN]:     self.move(-dt)
+        self.strafe_or_rotate(keys, dt)
         if keys[pygame.K_SPACE]:                        self.shoot()
         if keys[pygame.K_LSHIFT]:                       self.slow_down(dt, PLAYER_BRAKE_FORE)
 
+        # Clamp vector components to restrict player to a certain area (when in boss mode)
+        next_position = self.position + self.velocity          
+        if self.boss_active():
+            next_position.x = max(min(next_position.x, SCREEN_WIDTH - self.radius), self.radius)
+            next_position.y = max(min(next_position.y, SCREEN_HEIGHT - self.radius), SCREEN_HEIGHT * 0.6)
+            self.velocity = next_position - self.position
+
         # Move player according to current speed
-        self.position += self.velocity          
+        # self.position += self.velocity        
+        self.position = next_position  
 
         # Create some drag to stop player even without braking
         if self.velocity.magnitude() > 0:
             self.slow_down(dt, PLAYER_DRAG)
 
         # Update thrusters & speedometer
+        self.front_thrusterL.update()
+        self.front_thrusterR.update()
         self.rear_thrusterL.update()
         self.rear_thruster.update()
         self.rear_thrusterR.update()
@@ -304,7 +358,8 @@ class Player(CircleShape):
 
     def init_player(self, position, remaining_lives):       
         self.spawn_guard = PLAYER_SPAWN_SAFEGUARD           # Set timer to track respawn invincable duration (but visable)
-        self.__respawn_countdown = 0                        
+        self.__respawn_countdown = 0
+        self.__strafe_active = False
         self.angle = 0
         self.last_rotation = 0
         self.position = position

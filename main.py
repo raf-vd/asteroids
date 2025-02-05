@@ -157,6 +157,9 @@ def game_loop(asteroidfield, drawable, updatable, asteroids, shots, player, scor
                 exit_msg()                                                                      # Forced quit by x on window
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:                   # Allow menu access in the game loop
                 return 'PAUSE'
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_TAB:   
+                    player.toggle_strafe()                                                      # Swap player strafe mode
             
         update_objects(updatable, dt)                                                           # Recalculate all objects in updatable group
         game_over = game_mechanics(asteroidfield, asteroids, shots, player, scoreboard)         # Perform actual game mechaniscs
