@@ -37,8 +37,8 @@ class Boss:
             self.boss_bullet_cooldown -= dt
         else:
             self.boss_bullet_cooldown = 2
-            dx = random.randint(int(self.position.x) - 200, int(self.position.x) + 200)
-            self.bullets.append(BossBullet(self.image.get_width() / 2 + dx, self.position.y + self.image.get_height()))     # spawn a bullet every 120 frames
+            dx = random.choice([int(self.position.x) - 185, int(self.position.x) + 175])
+            self.bullets.append(BossBullet(self.image.get_width() / 2 + dx, self.position.y + self.image.get_height() - 10))     # spawn a bullet every 120 frames
             # print(f"append bullet at {datetime.datetime.now()}")
 
         for bullet in self.bullets:
