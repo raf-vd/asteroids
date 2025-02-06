@@ -110,9 +110,11 @@ class Player(CircleShape):
         self.last_rotation = PLAYER_TURN_SPEED * dt  # Add this line
         self.angle += PLAYER_TURN_SPEED * dt    
         if self.last_rotation > 0:
+            self.front_thrusterL.create_particles(4)
             self.rear_thrusterR.create_particles(4)
         else:
             self.rear_thrusterL.create_particles(4)
+            self.front_thrusterR.create_particles(4)
 
     def strafe_or_rotate(self, keys, dt):
         if self.strafe_active():                                                  # swap controls
@@ -131,6 +133,9 @@ class Player(CircleShape):
             forward = pygame.Vector2(0, 1).rotate(self.angle)
             self.velocity += forward * PLAYER_ACCELERATION * dt
         if dt > 0: self.rear_thruster.create_particles(4)              # If moving forward (dt > 0), create thruster particles
+        if dt < 0: 
+            self.front_thrusterL.create_particles(4)              # If moving forward (dt > 0), create thruster particles
+            self.front_thrusterR.create_particles(4)              # If moving backwards (dt < 0), create thruster particles
 
     def strafe(self, dt):
         if self.velocity.magnitude() < PLAYER_MAXIMUM_SPEED:            # Limit maximum speed

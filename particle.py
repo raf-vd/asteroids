@@ -42,21 +42,15 @@ class Particle:
 
             case ThrusterPosition.LEFT_FRONT:
                 points = self.ship.triangle()
-                side_vector = points[0] - points[1]  # Vector along left side
-                side_direction = side_vector.normalize()
-                # Adjust the multiplier to move thruster up/down the side
-                # 0.0 would be at points[1] (bottom)
-                # 1.0 would be at points[0] (top)
-                back_point = points[1] + (side_direction * side_vector.length() * 0.7)  # Example: 70% up the side
+                side_vector = points[0] - points[1]                         # Vector along left side
+                side_direction = side_vector.normalize()                    # Normalize it
+                back_point = points[1] + (side_direction * side_vector.length() * 0.7)  # 70% up the side
 
             case ThrusterPosition.RIGHT_FRONT:
                 points = self.ship.triangle()
-                side_vector = points[0] - points[2]  # Vector along left side
-                side_direction = side_vector.normalize()
-                # Adjust the multiplier to move thruster up/down the side
-                # 0.0 would be at points[1] (bottom)
-                # 1.0 would be at points[0] (top)
-                back_point = points[2] + (side_direction * side_vector.length() * 0.7)  # Example: 70% up the side
+                side_vector = points[0] - points[2]                         # Vector along right side
+                side_direction = side_vector.normalize()                    # Normalize it
+                back_point = points[2] + (side_direction * side_vector.length() * 0.7)  # 70% up the side
 
             case ThrusterPosition.LEFT_BACK:
                 points = self.ship.triangle()
