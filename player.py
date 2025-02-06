@@ -128,34 +128,34 @@ class Player(CircleShape):
             if keys[pygame.K_a]:                            self.strafe(dt)
             if keys[pygame.K_e]:                            self.strafe(-dt)
             
-    def move(self, dt):                     # move the player (forward, back)
+    def move(self, dt):                                                 # move the player (forward, back)
         if self.velocity.magnitude() < PLAYER_MAXIMUM_SPEED:            # Limit maximum speed
             forward = pygame.Vector2(0, 1).rotate(self.angle)
             self.velocity += forward * PLAYER_ACCELERATION * dt
-        if dt > 0: self.rear_thruster.create_particles(4)              # If moving forward (dt > 0), create thruster particles
+        if dt > 0: self.rear_thruster.create_particles(4)               # If moving forward (dt > 0), create thruster particles
         if dt < 0: 
-            self.front_thrusterL.create_particles(4)              # If moving forward (dt > 0), create thruster particles
-            self.front_thrusterR.create_particles(4)              # If moving backwards (dt < 0), create thruster particles
+            self.front_thrusterL.create_particles(4)                    # If moving forward (dt > 0), create thruster particles
+            self.front_thrusterR.create_particles(4)                    # If moving backwards (dt < 0), create thruster particles
 
     def strafe(self, dt):
         if self.velocity.magnitude() < PLAYER_MAXIMUM_SPEED:            # Limit maximum speed
             side = pygame.Vector2(1, 0).rotate(self.angle)
             self.velocity += side * PLAYER_ACCELERATION * dt
         if dt < 0: 
-            self.front_thrusterL.create_particles(4)              # If strafing right (dt < 0), create thruster particles
+            self.front_thrusterL.create_particles(4)                    # If strafing right (dt < 0), create thruster particles
             self.rear_thrusterL.create_particles(4)              
         if dt > 0:
-            self.front_thrusterR.create_particles(4)              # If strafinf left (dt > 0), create thruster particles
+            self.front_thrusterR.create_particles(4)                    # If strafinf left (dt > 0), create thruster particles
             self.rear_thrusterR.create_particles(4)
 
     def slow_down(self, dt, slow_factor):
-        if self.velocity.magnitude() < 0.01:                             # If velocity is very small, just stop completely
+        if self.velocity.magnitude() < 0.01:                            # If velocity is very small, just stop completely
             self.velocity = pygame.Vector2(0, 0)
         else:
             slowing_force = self.velocity.normalize() * slow_factor     
             self.velocity -= slowing_force * dt                         # Reduce velocity natural drag or braking force in slow_factor
 
-    def update(self, dt):                   # process inputs from keys and do all sorts of changes to player
+    def update(self, dt, boss=None):                                   # Process inputs from keys and do all sorts of changes to player
 
         self.last_rotation = 0                              # Init rotation to keep track how much rotation there was in a frame
 
@@ -182,16 +182,18 @@ class Player(CircleShape):
             self.activate_upgrade(PowerUp.SMALLER_SHOT)
 
         if self.non_hit_scoring_streak > PLAYER_MIN_SCORE_STREAK:  # you need to have a minimal scoring streak to have any shield regeneration
-            if self.shield_regeneration < 2.0:                                                                  # Hardcap shieldregen
+            if self.shield_regeneration < 2.0:                                                                   # Hardcap shieldregen
                 self.shield_regeneration = (self.non_hit_scoring_streak / 100) * (1 / (self.shield_charge*3 +1)) # Shield regen lowers when more shield is active
             self.activate_upgrade(PowerUp.INCREASE_SHIELD, self.shield_regeneration)
 
+        ### Boss active => force move to lower centre of screen ###
+        if self.boss_active():
+            if boss.spawn_wait > 0:
+                self.guide_to_bottom_centre(boss,dt)
+                return
+
         # Process input
         keys = pygame.key.get_pressed()
-        # if keys[pygame.K_q] or keys[pygame.K_LEFT]:     self.rotate(-dt)
-        # if keys[pygame.K_d] or keys[pygame.K_RIGHT]:    self.rotate(dt)
-        # if keys[pygame.K_a]:                            self.strafe(dt)
-        # if keys[pygame.K_e]:                            self.strafe(-dt)
         if keys[pygame.K_z] or keys[pygame.K_UP]:       self.move(dt)
         if keys[pygame.K_s] or keys[pygame.K_DOWN]:     self.move(-dt)
         self.strafe_or_rotate(keys, dt)
@@ -204,9 +206,8 @@ class Player(CircleShape):
             next_position.x = max(min(next_position.x, SCREEN_WIDTH - self.radius), self.radius)
             next_position.y = max(min(next_position.y, SCREEN_HEIGHT - self.radius), SCREEN_HEIGHT * 0.6)
             self.velocity = next_position - self.position
-
-        # Move player according to current speed
-        # self.position += self.velocity        
+        
+        # Move player according to current speed but clamped to limited box if boss is active
         self.position = next_position  
 
         # Create some drag to stop player even without braking
@@ -330,19 +331,12 @@ class Player(CircleShape):
                 if self.__shot_size_multiplier < 10: 
                     self.__shot_size_multiplier += 1
                     self.__upgrade_countdown_bulletsize = 1
-                # if Shot.shot_size_multiplier < 10:
-                #     Shot.shot_size_multiplier += 1
-                #     self.__upgrade_countdown_bulletsize = 1
 
             case PowerUp.SMALLER_SHOT:
                 if self.__shot_size_multiplier > 1:
                     self.__shot_size_multiplier -= 1
                     if self.__shot_size_multiplier > 1:
                         self.__upgrade_countdown_bulletsize = 1
-                # if Shot.shot_size_multiplier > 1:
-                #     Shot.shot_size_multiplier -= 1
-                #     if Shot.shot_size_multiplier > 1:
-                #         self.__upgrade_countdown_bulletsize = 1
 
             case PowerUp.INCREASE_SHIELD:
                 if self.shield_charge + value < 100:
@@ -374,3 +368,42 @@ class Player(CircleShape):
         self.shield_regeneration = 0                        # dying resets shield regeneration rate
         self.shield_charge = PLAYER_STARTING_SHIELD         # shield inits at 10 strength when respawning
         self.shoot_timer = 0
+
+    def guide_to_bottom_centre(self, boss, dt):
+        # Target positions
+        boss_target_x, boss_target_y = SCREEN_WIDTH / 2,  125 
+        player_target_x, player_target_y = SCREEN_WIDTH / 2, SCREEN_HEIGHT * 0.9
+
+        # Check if already at the target (Stop movement, task done)
+        if self.position.distance_to((player_target_x, player_target_y)) < 10:
+            return
+
+        rect = boss.image.get_rect(topleft=boss.position)                               # Get centre of image
+        sprite_center = pygame.math.Vector2(rect.center)
+        boss_to_travel = sprite_center.distance_to((boss_target_x, boss_target_y))      # Get distance to target from centre of image
+        self_to_travel = self.position.distance_to((player_target_x, player_target_y))
+        boss_speed = FRAME_RATE / 2                                                     # Boss moved down at 1 per 2 frames 
+        if boss_to_travel == 0: boss_to_travel = 0.01                                   # prevent div/0
+        player_speed = (self_to_travel / boss_to_travel) * boss_speed                   # Synchronize speeds
+
+        # with open("logfile.csv", "a") as file:
+        #     file.write(f";x;{sprite_center.x};y;{sprite_center.y};{int(boss_to_travel)};x;{self.position.x};y;{round(self.position.y,1)};{int(self_to_travel)};{round(player_speed,2)};{round(boss_to_travel/ self_to_travel,2)}\n")
+
+        # Optionally increase speed slightly to make player arrive first
+        player_speed *= 1.35  # Increase by 25% (make sure player gets to his position first)
+
+        # Compute direction vector (normalized delta)
+        pdx = player_target_x - self.position.x
+        pdy = player_target_y - self.position.y
+        direction_x = (pdx / self_to_travel) if self_to_travel > 0 else 0
+        direction_y = (pdy / self_to_travel) if self_to_travel > 0 else 0
+
+        # print(f"{self.angle}->{self.angle + PLAYER_TURN_SPEED * dt}")
+        if self.angle < 180:
+            self.angle = min(self.angle + PLAYER_TURN_SPEED / 2 * dt, 180)
+        elif self.angle > 180:
+            self.angle = max(self.angle - PLAYER_TURN_SPEED / 2 * dt, 180)
+
+        # Update player's position incrementally based on speed and delta time (dt)
+        self.position.x += direction_x * player_speed * dt
+        self.position.y += direction_y * player_speed * dt

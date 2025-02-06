@@ -20,6 +20,7 @@ class Boss:
         self.image = image  
         self.image.set_alpha(225)                           # Set transparency, values range from 0 (completely transparent) to 255 (completely opaque)
         self.mask = pygame.mask.from_surface(self.image)    # Create a mask from the non-transparent pixel
+        self.spawn_wait = 2
         self.ready = False
         self.bullets = []
         self.boss_bullet_cooldown = 2                       # Time between boss bullets
@@ -30,7 +31,7 @@ class Boss:
             bullet.draw()
 
     def update(self, dt):
-        self.basic_movement()                                                                                               # Move around a bit
+        self.basic_movement(dt)                                                                                               # Move around a bit
         if not self.ready: return                                                                                           # Fully spawn/descend first
 
         if self.boss_bullet_cooldown > 0:
@@ -44,7 +45,7 @@ class Boss:
         for bullet in self.bullets:
             bullet.update(dt)
 
-    def basic_movement(self):
+    def basic_movement(self, dt):
         self.framecount += 1                                        # Speed controlled by framerate
 
         if not self.ready:                                          # Initial descent/entry
@@ -54,8 +55,11 @@ class Boss:
             if self.position.y == self.target_y1: self.ready =True  # Reached descent/entry
             return 
         
-        # print(f"framecount: {self.framecount}, % = {self.framecount % 300}")
-        if self.framecount % 300 == 0:                              # Every 600 frames => randomlt change directions (or not)
+        if self.spawn_wait > 0:                                     # Hold still for 2s after arriving at low point
+            self.spawn_wait -= dt
+            return
+
+        if self.framecount % 300 == 0:                              # Every 300 frames => randomlt change directions (or not)
             self.horizontal = random.choice([1, -1])
             self.vertical = random.choice([1, -1])
             self.framecount = 0

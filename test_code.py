@@ -40,11 +40,10 @@ def main():
     player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
     speedometer = Speedometer()
 
-    boss = Boss((SCREEN_WIDTH - boss_image.get_width())/ 2, -boss_image.get_height() - 10, boss_image)
-
+    # boss = Boss((SCREEN_WIDTH - boss_image.get_width())/ 2, -boss_image.get_height() - 10, boss_image)
+    boss = None
     dt = 0
 
-    # In your initialization
     while True:
 
         surface.fill((0, 0, 0, 0))                          # reset surface
@@ -60,44 +59,23 @@ def main():
                 if event.key == pygame.K_F8:   
                     player.toggle_boss_mode()
                     print(f"F8 pressed boss mode active = {player.boss_active()}")
-            # if event.type == pygame.KEYDOWN:
-            #     if event.key == pygame.K_KP_PLUS:
-            #         for i in range(10):
-            #             particles.append(Particle(50 + random.randint(1, 10),500 + random.randint(10, 20)))
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_KP_PLUS:
+                    boss = boss = Boss((SCREEN_WIDTH - boss_image.get_width())/ 2, -boss_image.get_height() - 10, boss_image)
+                    # print(f"boss(x,y)={boss.position}\tboss target(x,y)=[{SCREEN_WIDTH / 2}, 125]")
+                    # rect = boss.image.get_rect(topleft=boss.position)
+                    # print(f"bossCenter(x,y)={rect.center}\tboss target(x,y)=[{SCREEN_WIDTH / 2}, 125]")
+                    player.toggle_boss_mode()
+                    # print(f"player(x,y)={player.position}\t player target(x,y)=[{SCREEN_WIDTH / 2}, {SCREEN_HEIGHT * 0.9}]")
 
-        # for l_ast in l_asts:
-        #     l_ast.draw()
+        if not boss is None:
+            boss.update(dt)
 
-        # Check bos-bullet collisions (remeber to do player to LATER)
-        # pygame.draw.rect(surface, (255,255,255), boss.image.get_rect(topleft=(boss.position.x, boss.position.y)))
-        boss.update(dt)
-        for obj in updatable:
-            obj.update(dt)
-            if isinstance(obj, Shot):
-                rect = boss.image.get_rect(topleft=(boss.position.x, boss.position.y))
-                if obj.circle_vs_rect(rect):    # naast hitbox (quick check) => geen mask check
-                    # if boss.check_collision(obj): 
-                    if obj.circle_vs_mask(boss.mask, rect):
-                        crack_lump_sound.play()
-                        obj.kill()
-                        # print("Collision detected!")
+        player.update(dt, boss)
+        player.draw()
 
-        for obj in asteroids:
-            if player.collides(obj):                                            # PLAYER COLLISION DETECTION
-                if player.lives < 1:                                            
-                    pass
-
-        for obj in drawable:
-            # if isinstance(obj, Player):
-                obj.draw()
-
-        for expl in explosions:
-            expl.draw()
-
-        speedometer.update(player.velocity)
-        speedometer.draw()
-
-        boss.draw()
+        if not boss is None:
+            boss.draw()
 
         screen.blit(surface, (0, 0))  
         pygame.display.flip()

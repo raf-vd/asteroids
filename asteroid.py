@@ -18,7 +18,7 @@ class LumpyAsteroid(CircleShape):
         else:
             self.score_value = 1800 / self.radius
         # self.colour = self.get_colour(random.randint(190, 200))
-        self.colour = self.get_colour(random.randint(210, 220))
+        self.colour = self.get_colour(random.randint(200, 210))
 
     def draw(self):
         self.wrap_screen()                                                              # Handle asteroid wrapping around screen
