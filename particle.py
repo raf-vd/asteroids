@@ -81,7 +81,7 @@ class Particle:
         # Increase life reduction when rotating
         if hasattr(self.ship, 'last_rotation') and self.ship.last_rotation != 0:
             # Scale life reduction based on rotation speed
-            rotation_factor = 35 * abs(self.ship.last_rotation) / PLAYER_TURN_SPEED
+            rotation_factor = 50 * abs(self.ship.last_rotation) / PLAYER_TURN_SPEED
             life_reduction = 1 + rotation_factor
         
         self.current_life -= life_reduction

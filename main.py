@@ -140,7 +140,7 @@ def game_mechanics(asteroidfield, asteroids, shots, player, scoreboard):
                 if scoreboard.add(score_hit):                               # When add returns True, a new level was reached, and Asteroids will speed up
                     LumpyAsteroid.velocity_multiplier *= 1 + ASTEROID_VELOCITY_MULTIPLIER
                     if not scoreboard.level % 3:                            # Spawn several special asteroids each 3 levels
-                        asteroidfield.super_spawn(scoreboard.level, 1 + scoreboard.level / 10) 
+                        asteroidfield.super_spawn(scoreboard.level) 
 
         if player.collides(obj):                                            # PLAYER COLLISION DETECTION
             if player.lives < 1:                                            
