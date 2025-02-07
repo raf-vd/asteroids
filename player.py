@@ -189,7 +189,8 @@ class Player(CircleShape):
         ### Boss active => force move to lower centre of screen ###
         if self.boss_active():
             if boss.spawn_wait > 0:
-                self.guide_to_bottom_centre(boss,dt)
+                # self.guide_to_bottom_centre(boss,dt)
+                self.guide_to_bottom_centre2()
                 return
 
         # Process input
@@ -407,3 +408,16 @@ class Player(CircleShape):
         # Update player's position incrementally based on speed and delta time (dt)
         self.position.x += direction_x * player_speed * dt
         self.position.y += direction_y * player_speed * dt
+
+    def guide_to_bottom_centre2(self):
+        
+        if self.position.x < SCREEN_WIDTH / 2:
+            self.position.x = min(self.position.x + 2, SCREEN_WIDTH / 2)
+        elif self.position.x > SCREEN_WIDTH / 2:
+            self.position.x = max(self.position.x - 2, SCREEN_WIDTH / 2)
+
+        if self.position.y < SCREEN_HEIGHT * 0.9:
+            self.position.y = min(self.position.y + 2, SCREEN_HEIGHT * 0.9 )
+        elif self.position.y > SCREEN_HEIGHT / 2:
+            self.position.y = max(self.position.y - 2, SCREEN_HEIGHT * 0.9)            
+    
