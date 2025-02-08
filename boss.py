@@ -1,4 +1,3 @@
-import datetime
 import pygame
 import random
 from constants import *
@@ -7,8 +6,9 @@ from resources import boss_bullet_frames, surface
 from circleshape import CircleShape
 
 
-class Boss:
+class Boss(pygame.sprite.Sprite):
     def __init__(self, x, y, image):
+        super().__init__(self.containers)                   # Call the base class constructor to pass on the containers
         self.position = pygame.Vector2(x, y)
         self.framecount = 0                                 # Use to manipulate speed related actions
         self.vertical = 1                                   # Moving Up or Downn
@@ -25,11 +25,6 @@ class Boss:
         self.bullets = []
         self.boss_bullet_cooldown = 2                       # Time between boss bullets
 
-    def draw(self):
-        surface.blit(self.image, self.position)
-        for bullet in self.bullets:
-            bullet.draw()
-
     def update(self, dt):
         self.basic_movement(dt)                                                                                               # Move around a bit
         if not self.ready: return                                                                                           # Fully spawn/descend first
@@ -42,8 +37,16 @@ class Boss:
             self.bullets.append(BossBullet(self.image.get_width() / 2 + dx, self.position.y + self.image.get_height() - 10))     # spawn a bullet every 120 frames
             # print(f"append bullet at {datetime.datetime.now()}")
 
+        # for bullet in self.bullets:
+        #     bullet.update(dt)
+
+    def draw(self):
+        surface.blit(self.image, self.position)
+        # self.draw_bullets()
+
+    def draw_bullets(self):
         for bullet in self.bullets:
-            bullet.update(dt)
+            bullet.draw()
 
     def basic_movement(self, dt):
         self.framecount += 1                                        # Speed controlled by framerate
@@ -58,6 +61,8 @@ class Boss:
         if self.spawn_wait > 0:                                     # Hold still for 2s after arriving at low point
             self.spawn_wait -= dt
             return
+        else:
+            self.spawn_wait = 0                                     # make sure spawn_wait is at exactly 0, so not negative
 
         if self.framecount % 300 == 0:                              # Every 300 frames => randomlt change directions (or not)
             self.horizontal = random.choice([1, -1])
@@ -144,9 +149,6 @@ class Boss:
             if bullet.rect.y > SCREEN_HEIGHT:  # Remove off-screen bullets
                 self.bullets.remove(bullet)
 
-    def draw_bullets(self, surface):
-        for bullet in self.bullets:
-            bullet.draw(surface)
 
     def fire_tracking_bullet(self, player_x, player_y):
         """Fire a slow tracking bullet at the player."""

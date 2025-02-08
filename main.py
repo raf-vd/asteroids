@@ -1,14 +1,15 @@
 import pygame
 from constants import *
-from resources import background, clock, font32, font64, game_over_sound, game_sounds, player_explosion_frames, screen, surface
+from resources import background, boss_image, clock, font20_fsb, font64, game_over_sound, game_sounds, player_explosion_frames, screen, surface
 from functions import exit_msg, render_line
 from explosion import Explosion
-from scoreboard import ScoreBoard
-from player import Player, PowerUp
 from asteroid import LumpyAsteroid
 from asteroidfield import AsteroidField
-from shot import Shot
+from boss import Boss, BossBullet
 from menu import Menu
+from player import Player, PowerUp
+from scoreboard import ScoreBoard
+from shot import Shot
 
 def menu_placeholder():
     dt = 0
@@ -26,7 +27,7 @@ def menu_placeholder():
 
         render_line(font64, "menu placeholder", bar_surface, (255, 255, 0), 100)                # Actual data
 
-        render_line(font32, "Press ESC to continue", bar_surface, (255, 255, 255), bar_surface.get_height() - 100)
+        render_line(font20_fsb, "Press ESC to continue", bar_surface, (255, 255, 255), bar_surface.get_height() - 100)
         screen.blit(bar_surface, (0,0))
 
         pygame.display.flip()
@@ -47,16 +48,20 @@ def keybinds_screen():                                                          
         bar_surface = pygame.Surface(screen.get_size(), pygame.SRCALPHA)                        # Create a surface for the menu to be drawn upon
         bar_surface.fill((255, 255, 255, 100))                                                  # Fill surface with transparent white
         
-        render_line(font64, "Keybinds", bar_surface, (255, 255, 0), 100)                        # Actual data
-        render_line(font32, "Z or UP-arrow = thrusters", bar_surface, (0, 0, 0), 250)
-        render_line(font32, "S or DOWN-arrow = reverse thrusters", bar_surface, (0, 0, 0), 300)
-        render_line(font32, "Q or LEFT-arrow = rotate left", bar_surface, (0, 0, 0), 350)
-        render_line(font32, "D or RIGHT-arrow = rotate right", bar_surface, (0, 0, 0), 400)
-        render_line(font32, "SPACEBAR = fire main weapon", bar_surface, (0, 0, 0), 450)
-        render_line(font32, "Left SHIFT = BRAKE", bar_surface, (0, 0, 0), 500)
-        render_line(font32, "Press ESC to continue", bar_surface, (255, 255, 255), bar_surface.get_height() - 100)
+        vertical_offset = 75
+        vertical_offset = render_line(font64, "Keybinds", bar_surface, (255, 255, 0), vertical_offset, 2)                        # Actual data
+        vertical_offset = render_line(font20_fsb, "Z or ↑ = thrusters", bar_surface, (0, 0, 0), vertical_offset)
+        vertical_offset = render_line(font20_fsb, "S or ↓ = reverse thrusters", bar_surface, (0, 0, 0), vertical_offset)
+        vertical_offset = render_line(font20_fsb, "Q or ← = rotate left", bar_surface, (0, 0, 0), vertical_offset)
+        vertical_offset = render_line(font20_fsb, "D or → = rotate right", bar_surface, (0, 0, 0), vertical_offset)
+        vertical_offset = render_line(font20_fsb, "A = strafe left", bar_surface, (0, 0, 0), vertical_offset)
+        vertical_offset = render_line(font20_fsb, "E = strafe right", bar_surface, (0, 0, 0), vertical_offset,2 )
+        vertical_offset = render_line(font20_fsb, "SPACEBAR = fire main weapon", bar_surface, (0, 0, 0), vertical_offset)
+        vertical_offset = render_line(font20_fsb, "Left SHIFT = BRAKE", bar_surface, (0, 0, 0), vertical_offset)
+        vertical_offset = render_line(font20_fsb, "TAB = Swap rotate & strafe controls (auto used in boss mode)", bar_surface, (0, 0, 0), vertical_offset)
+        vertical_offset = render_line(font20_fsb, "Press ESC to continue", bar_surface, (255, 255, 255), bar_surface.get_height() - 75)
         screen.blit(bar_surface, (0,0))
-
+        # text = "Use the arrow keys: ↑ ↓ ← →"
         pygame.display.flip()
         dt += clock.tick(FRAME_RATE_MENU)/1000
 
@@ -84,14 +89,19 @@ def game_over_screen(scoreboard, player):                                       
         pygame.display.flip()
         dt += clock.tick(FRAME_RATE)/1000
 
-def update_objects(updatable, dt):
+def update_objects(updatable, dt, boss):
     for obj in updatable: 
-        obj.update(dt)
+        if isinstance(obj, Player):
+            obj.update(dt, boss)
+        else:
+            obj.update(dt)
 
 def draw_objects(drawable):
     for obj in drawable:                                # Draw Shots & Asteroids first
-        if (isinstance(obj, Shot) or                          
-            isinstance(obj, LumpyAsteroid)):
+        if (isinstance(obj, Boss) or                          
+            isinstance(obj, BossBullet) or 
+            isinstance(obj, LumpyAsteroid) or
+            isinstance(obj, Shot)):
             obj.draw()                                              
 
     for play in drawable:                             # Draw player next (and speedometer)
@@ -111,13 +121,13 @@ def refresh_screen(player, scoreboard):
     screen.blit(surface, (0, 0))                        # overlay surface
     pygame.display.flip()                               # refresh display
 
-def game_mechanics(asteroidfield, asteroids, shots, player, scoreboard):
+def game_mechanics(asteroidfield, player, scoreboard, asteroids, boss_bullets, shots):
 
     game_over =  False                                                      # Init game flow variables
 
-    for obj in asteroids:
+    for obj in asteroids:                                                   # Loop used in asteroids fase
 
-        if game_over: return game_over                                     # Abort loop when game has ended
+        if game_over: return game_over                                      # Abort loop when game has ended
 
         for bullet in shots:                                                # SHOT HIT DETECTION
 
@@ -146,9 +156,18 @@ def game_mechanics(asteroidfield, asteroids, shots, player, scoreboard):
             if player.lives < 1:                                            
                 game_over = game_over_screen(scoreboard, player)            # Show endscore, track that game is over
 
+    for bb in boss_bullets:                                                 # Loop used in boss fase
+
+        if game_over: return game_over                                      # Abort loop when game has ended
+
+        if player.collides(bb):                                             # PLAYER COLLISION DETECTION
+            if player.lives < 1:                                            
+                game_over = game_over_screen(scoreboard, player)            # Show endscore, track that game is over
+
     return game_over                                                        # Pass on game flow variables
 
-def game_loop(asteroidfield, drawable, updatable, asteroids, shots, player, scoreboard):
+def game_loop(asteroidfield, boss, player, scoreboard, asteroids, boss_bullets, drawable, shots, updatable):
+# def game_loop(asteroidfield, drawable, updatable, asteroids, shots, player, scoreboard, boss):
     dt = 0                                                                                      # Init
     clock.tick()                                                                                # Reset the clock's time delta
     while True:
@@ -161,10 +180,20 @@ def game_loop(asteroidfield, drawable, updatable, asteroids, shots, player, scor
                 if event.key == pygame.K_TAB:   
                     player.toggle_strafe()                                                      # Swap player strafe mode
             
-        update_objects(updatable, dt)                                                           # Recalculate all objects in updatable group
-        game_over = game_mechanics(asteroidfield, asteroids, shots, player, scoreboard)         # Perform actual game mechaniscs
+        update_objects(updatable, dt, boss)                                                     # Recalculate all objects in updatable group
+        game_over = game_mechanics(asteroidfield, player, scoreboard, 
+                                   asteroids, boss_bullets, shots)                              # Perform actual game mechaniscs
         if game_over: return 'MENU'                                                             # Game over => back to menu
             
+        if scoreboard.level == BOSS_SPAWN_LEVEL and not player.boss_active():                   # Spawn boss
+            asteroidfield.kill()                                                                # Stop spawning asteroids
+            for asteroid in asteroids:                                                          
+                asteroid.kill()                                                                 # Remove remaining asteroids
+            # Spawn boss
+            boss = Boss((SCREEN_WIDTH - boss_image.get_width())/ 2, -boss_image.get_height() - 10, boss_image)
+            player.toggle_boss_mode()                
+            if not player.strafe_active(): player.toggle_strafe()                                 # Force boss fase start in strafe mode
+
         clear_screen()                                                                          # Drawing section
         draw_objects(drawable)
         refresh_screen(player, scoreboard)
@@ -191,17 +220,19 @@ def main():
     pygame.init()                                                                               # Pygame
     pygame.mixer.music.play(-1)
 
-    updatable = pygame.sprite.Group()                                                           # groups
+    asteroids = pygame.sprite.Group()                                                           # groups
+    boss_bullets = pygame.sprite.Group()
     drawable = pygame.sprite.Group()
-    asteroids = pygame.sprite.Group()
     shots = pygame.sprite.Group()
-    explosions = pygame.sprite.Group()
+    updatable = pygame.sprite.Group()                                                           
 
-    Player.containers = (updatable, drawable)                                                   # containers
-    LumpyAsteroid.containers = (asteroids, updatable, drawable)
-    AsteroidField.containers = updatable
-    Shot.containers = (shots, updatable, drawable)
-    Explosion.containers = (explosions, updatable, drawable)
+    AsteroidField.containers = updatable                                                        # containers
+    Boss.containers = (drawable, updatable)
+    BossBullet.containers = (boss_bullets, drawable, updatable)
+    Explosion.containers = (drawable, updatable)
+    LumpyAsteroid.containers = (asteroids, drawable, updatable)
+    Player.containers = (drawable, updatable)
+    Shot.containers = (drawable, shots, updatable)
 
     settings_menu = Menu("Settings",[("Keybinds", keybinds_screen, True),
                                      ("Sound", menu_placeholder, True),
@@ -216,6 +247,7 @@ def main():
     game_state = "MENU"                                                                         # Init variables
     game_paused = False
     asteroidfield = None
+    boss = None
     player = None
     scoreboard = None
     
@@ -252,7 +284,9 @@ def main():
             current_menu.update_visibility(game_paused)                                         # Regular menu flow: update visibility by default
 
         elif game_state == "GAME":                                                              # Run the actual gameloop
-            game_state = game_loop(asteroidfield, drawable, updatable, asteroids, shots, player, scoreboard)
+            game_state = game_loop(asteroidfield, boss, player, scoreboard, 
+                                   asteroids, boss_bullets, drawable, shots, updatable)
+            # game_state = game_loop(asteroidfield, drawable, updatable, asteroids, shots, player, scoreboard, boss)
 
     exit_msg()                                                                                  # Close the program with a final message
 

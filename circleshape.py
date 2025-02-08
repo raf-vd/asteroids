@@ -50,3 +50,33 @@ class CircleShape(pygame.sprite.Sprite):
             self.position.y = screen.get_height() + self.radius * 0.9
         elif self.position.y > screen.get_height() + self.radius:
             self.position.y = 0 - self.radius * 0.9
+
+    # Move self to a coordinate
+    def guide_to_location(self, x, y, angle=180, speed=3): 
+
+        # Code to help with multipart objects
+        old_x = self.position.x
+        old_y = self.position.y
+
+        # Move CircleShape towards target coordinate
+        if self.position.x < x:     self.position.x = min(self.position.x + speed, x) 
+        elif self.position.x > x:   self.position.x = max(self.position.x - speed, x)
+        if self.position.y < y:     self.position.y = min(self.position.y + speed, y ) 
+        elif self.position.y > y:   self.position.y = max(self.position.y - speed, y)            
+
+        # ASTEROIDS
+        if hasattr(self, "lumps"):          # Asteroid move lumps according to main body
+            for lump in self.lumps:
+                if old_x < x:       lump.position.x = lump.position.x + speed
+                elif old_x > x:     lump.position.x = lump.position.x - speed
+                if old_y < y:       lump.position.y = lump.position.y + speed
+                elif old_y > y:     lump.position.y = lump.position.y - speed
+
+        # PLAYERS
+        if hasattr(self, "angle"):          # Face player upwards (work on base angle (<360) by using %)
+            self.angle %= 360
+            if self.angle < angle:    self.angle = min(self.angle + 1, angle)
+            elif self.angle > angle:  self.angle = max(self.angle - 1, angle)
+
+        # Remset velocity
+        self.velocity = pygame.Vector2(0, 0)        

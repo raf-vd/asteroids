@@ -1,6 +1,6 @@
 import pygame
 from constants import PLAYER_MAXIMUM_SPEED, SCREEN_HEIGHT, SCREEN_WIDTH
-from resources import broken_speedometer, needle_image, speedometer_image, screen, surface
+from resources import broken_speedometer, needle_image, speedometer_image, surface
 
 class Speedometer:
     def __init__(self, speed=0):

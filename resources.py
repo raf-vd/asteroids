@@ -56,13 +56,18 @@ if True:
 
 # Fonts
 if True:
+    # FreeSans_otf = resource_path("font/FreeSans.otf")
+    FreeSansBold_otf = resource_path("font/FreeSansBold.otf")
+
     pygame.font.init()
-    font64 = pygame.font.Font(None, 64)  
+    font64 = pygame.font.Font(None, 64)
     font48 = pygame.font.Font(None, 48)  
     font36 = pygame.font.Font(None, 36)
     font32 = pygame.font.Font(None, 32)
     font24 = pygame.font.Font(None, 24)
     font20 = pygame.font.Font(None, 20)
+    # font20_fs = pygame.font.Font(FreeSans_otf, 20)  # For unicode characters support (arrow keys)
+    font20_fsb = pygame.font.Font(FreeSansBold_otf, 20)  # For unicode characters support (arrow keys)
 
 # Frame loading mechanic (dynamic pathing included)
 if True:

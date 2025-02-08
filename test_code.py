@@ -44,6 +44,11 @@ def main():
     boss = None
     dt = 0
 
+    mv_ast = LumpyAsteroid(100,0,25)
+    track = 0
+
+    homing_ast = LumpyAsteroid(-24,SCREEN_HEIGHT / 2 , 40)
+
     while True:
 
         surface.fill((0, 0, 0, 0))                          # reset surface
@@ -61,12 +66,8 @@ def main():
                     print(f"F8 pressed boss mode active = {player.boss_active()}")
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_KP_PLUS:
-                    boss = boss = Boss((SCREEN_WIDTH - boss_image.get_width())/ 2, -boss_image.get_height() - 10, boss_image)
-                    # print(f"boss(x,y)={boss.position}\tboss target(x,y)=[{SCREEN_WIDTH / 2}, 125]")
-                    # rect = boss.image.get_rect(topleft=boss.position)
-                    # print(f"bossCenter(x,y)={rect.center}\tboss target(x,y)=[{SCREEN_WIDTH / 2}, 125]")
+                    boss = Boss((SCREEN_WIDTH - boss_image.get_width())/ 2, -boss_image.get_height() - 10, boss_image)
                     player.toggle_boss_mode()
-                    # print(f"player(x,y)={player.position}\t player target(x,y)=[{SCREEN_WIDTH / 2}, {SCREEN_HEIGHT * 0.9}]")
 
         if not boss is None:
             boss.update(dt)
@@ -76,6 +77,26 @@ def main():
 
         if not boss is None:
             boss.draw()
+
+        match track:
+            case 0: 
+                mv_ast.guide_to_location(25, 100,speed=1)
+                if mv_ast.position == (25, 100) : track += 1 
+            case 1: 
+                mv_ast.guide_to_location(25,300,speed=3)
+                if mv_ast.position == (25, 300): track += 1
+            case 2: 
+                mv_ast.guide_to_location(125,400,speed=1)
+                if mv_ast.position == (125, 400): track += 1
+            case 3: 
+                mv_ast.guide_to_location(525,600,speed=5)
+                if mv_ast.position == (525, 600): track += 1
+            case _: pass
+        mv_ast.draw()
+
+        homing_ast.guide_to_location(player.position.x, player.position.y, speed=1)
+        homing_ast.draw()
+
 
         screen.blit(surface, (0, 0))  
         pygame.display.flip()

@@ -41,10 +41,11 @@ def rect_surface(bar_w, bar_h, colour):
     bar_surface.fill(colour)  
     return bar_surface
 
-def render_line(font, text, bar_surface, colour, vertical_offset=0):
+def render_line(font, text, bar_surface, colour, vertical_offset=0, line_spacing=1.5):
     text_surface = font.render(text, True, colour)
     text_rect = text_surface.get_rect(center=(bar_surface.get_width() / 2, vertical_offset))
     bar_surface.blit(text_surface, text_rect)
+    return int(vertical_offset + line_spacing * font.get_linesize())
 
 def biased_random():
     r = random.random()     # Raw random from 0 to 1

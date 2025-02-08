@@ -5,6 +5,7 @@ from resources import alert_channel, alert_sound, player_death_sound, player_exp
 from circleshape import CircleShape
 from enum import Enum
 from explosion import Explosion
+from asteroid import LumpyAsteroid
 from particle import ParticleSystem, ThrusterPosition
 from shot import Shot
 from speedometer import Speedometer
@@ -99,12 +100,15 @@ class Player(CircleShape):
                 pygame.draw.circle(surface, color, self.position, base_radius + wave_offset + int(self.shield_charge), shield_thickness)
 
         # Show thrusters & speedometer
+        self.draw_thrusters()
+        self.speedometer.draw()
+    
+    def draw_thrusters(self):
         self.front_thrusterL.draw()
         self.front_thrusterR.draw()
         self.rear_thrusterL.draw()
         self.rear_thruster.draw()
         self.rear_thrusterR.draw()
-        self.speedometer.draw()
     
     def rotate(self, dt):                   # rotate the player (left, right)
         self.last_rotation = PLAYER_TURN_SPEED * dt  # Add this line
@@ -190,38 +194,41 @@ class Player(CircleShape):
         if self.boss_active():
             if boss.spawn_wait > 0:
                 # self.guide_to_bottom_centre(boss,dt)
-                self.guide_to_bottom_centre2()
-                return
+                self.guide_to_bottom_centre()
 
-        # Process input
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_z] or keys[pygame.K_UP]:       self.move(dt)
-        if keys[pygame.K_s] or keys[pygame.K_DOWN]:     self.move(-dt)
-        self.strafe_or_rotate(keys, dt)
-        if keys[pygame.K_SPACE]:                        self.shoot()
-        if keys[pygame.K_LSHIFT]:                       self.slow_down(dt, PLAYER_BRAKE_FORE)
+        # Process input 
+        if boss is None or boss.spawn_wait == 0:    # When boss is spawning, imput is not accepted and movement is handled in self.guide_to_bottom_centre()
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_z] or keys[pygame.K_UP]:       self.move(dt)
+            if keys[pygame.K_s] or keys[pygame.K_DOWN]:     self.move(-dt)
+            self.strafe_or_rotate(keys, dt)
+            if keys[pygame.K_SPACE]:                        self.shoot()
+            if keys[pygame.K_LSHIFT]:                       self.slow_down(dt, PLAYER_BRAKE_FORE)
 
-        # Clamp vector components to restrict player to a certain area (when in boss mode)
-        next_position = self.position + self.velocity          
-        if self.boss_active():
-            next_position.x = max(min(next_position.x, SCREEN_WIDTH - self.radius), self.radius)
-            next_position.y = max(min(next_position.y, SCREEN_HEIGHT - self.radius), SCREEN_HEIGHT * 0.6)
-            self.velocity = next_position - self.position
+            # Clamp vector components to restrict player to a certain area (when in boss mode)
+            next_position = self.position + self.velocity          
+            if self.boss_active():
+                next_position.x = max(min(next_position.x, SCREEN_WIDTH - self.radius), self.radius)
+                next_position.y = max(min(next_position.y, SCREEN_HEIGHT - self.radius), SCREEN_HEIGHT * 0.6)
+                self.velocity = next_position - self.position
         
-        # Move player according to current speed but clamped to limited box if boss is active
-        self.position = next_position  
+            # Move player according to current speed but clamped to limited box if boss is active
+            self.position = next_position  
 
-        # Create some drag to stop player even without braking
-        if self.velocity.magnitude() > 0:
-            self.slow_down(dt, PLAYER_DRAG)
+            # Create some drag to stop player even without braking
+            if self.velocity.magnitude() > 0:
+                self.slow_down(dt, PLAYER_DRAG)
 
         # Update thrusters & speedometer
+        self.update_thrusters()
+        self.speedometer.update(self.velocity)
+
+    def update_thrusters(self):
         self.front_thrusterL.update()
         self.front_thrusterR.update()
         self.rear_thrusterL.update()
         self.rear_thruster.update()
         self.rear_thrusterR.update()
-        self.speedometer.update(self.velocity)
 
     def shoot(self):
         if self.shoot_timer > 0:
@@ -237,12 +244,13 @@ class Player(CircleShape):
             if self.shield_collides(other):
 
                 rc = other.check_collision(self)                            # Check returns -2 for miss,-1 for body hit, index of lump for lump hit                
-                if rc >= -1: 
+                if isinstance(other, LumpyAsteroid) and rc >= -1: 
                     if shield_channel.get_busy(): shield_channel.stop()     # Quiet shield on emminent danger
                     if not alert_channel.get_busy():                        # Prevent sound overlap
                         alert_channel.play(alert_sound)                     # Alarm sound: ship body in contact with asteroid while shielded
 
-                if rc > -1:  del other.lumps[rc]                            # Shield destroys lumps when they hit player ship while shielded
+                if isinstance(other, LumpyAsteroid) and rc > -1:            # Shield destroys lumps when they hit player ship while shielded
+                    del other.lumps[rc]
 
                 if not alert_channel.get_busy():                            # Don't play shield buzz when alert is playing
                     if not shield_channel.get_busy():                       # Avoid overlapping same sound multiple times
@@ -261,25 +269,28 @@ class Player(CircleShape):
         if self.triangle_circle_collide(other):
             return True
 
-        # Check player collides with any lump
-        for lump in other.lumps:
-            if self.triangle_circle_collide(lump):
-                return True
+        # Check player collides with any lump for asteroid collisions
+        if isinstance(other, LumpyAsteroid):
+            for lump in other.lumps:
+                if self.triangle_circle_collide(lump):
+                    return True
 
         return False
 
     def shield_collides(self, other):
 
-        # Broad check: shield outside mainradius + lumpradius
-        if self.position.distance_to(other.position) > self.radius + 10 + self.shield_charge + other.radius * (1 + ASTEROID_MAX_LUMP_SIZE):
-            return False
+        if isinstance(other, LumpyAsteroid):    # Only applicable for asteroids
 
-        # Check player collides with any lump
-        for lump in other.lumps:
-            if lump.position.distance_to(self.position) <= self.radius + 10 + self.shield_charge + lump.radius:
-                return True
+            # Broad check: shield outside mainradius + lumpradius
+            if self.position.distance_to(other.position) > self.radius + 10 + self.shield_charge + other.radius * (1 + ASTEROID_MAX_LUMP_SIZE):
+                return False
 
-        # Check player collides with asteroid main body
+            # Check shield collides with any lump
+            for lump in other.lumps:
+                if lump.position.distance_to(self.position) <= self.radius + 10 + self.shield_charge + lump.radius:
+                    return True
+
+        # Check shield collides with asteroid (main) circle
         if other.position.distance_to(self.position) <= self.radius + 10 + self.shield_charge + other.radius:
             return True
 
@@ -304,20 +315,23 @@ class Player(CircleShape):
     def collides(self, target):
         # disable collision for PLAYER_SPAWN_SAFEGUARD seconds after spawning
         # (this will also safeguard player during respawn cooldown)
-        if self.spawn_guard > 0:                                                                # Prevent colision while recently reswpawned
+        if self.spawn_guard > 0:                                                                    # Prevent colision while recently reswpawned
             return False                       
         
         if self.check_collision(target): 
-            if alert_channel.get_busy(): alert_channel.stop()                                   # Stop whatever the channel is playing
-            alert_channel.play(player_death_sound)                                              # Play crash sound
-            self.lives -= 1                                                                     # Player collided, take a life awat
-            if self.lives == 0:                                                                 # Out of lives => game ends
+            if alert_channel.get_busy(): alert_channel.stop()                                       # Stop whatever the channel is playing
+            alert_channel.play(player_death_sound)                                                  # Play crash sound
+            self.lives -= 1                                                                         # Player collided, take a life awat
+            if self.lives == 0:                                                                     # Out of lives => game ends
                 return True                             
-            Explosion(self.position, 1, player_explosion_frames)                                # Go BOOM
-            self.__respawn(pygame.Vector2(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2), self.lives)     # Respawn player in centre of screen          
+            Explosion(self.position, 1, player_explosion_frames)                                    # Go BOOM
+            if self.boss_active():
+                self.__respawn(pygame.Vector2(SCREEN_WIDTH / 2, SCREEN_HEIGHT * 0.9), self.lives)   # Respawn player in lower centre of screen
+            else:
+                self.__respawn(pygame.Vector2(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2), self.lives)     # Respawn player in centre of screen          
             return True
         
-        return False                                                                            # No collision
+        return False                                                                                # No collision
     
     def activate_upgrade(self, upgrade, value=1):
 
@@ -359,65 +373,19 @@ class Player(CircleShape):
     def init_player(self, position, remaining_lives):       
         self.spawn_guard = PLAYER_SPAWN_SAFEGUARD           # Set timer to track respawn invincable duration (but visable)
         self.__respawn_countdown = 0
-        self.__strafe_active = False
-        self.angle = 0
+        # self.__strafe_active = False
+        self.angle = 180 if self.boss_active() else 0       # Boss mode: face up, normal mode: face down
         self.last_rotation = 0
         self.position = position
         self.velocity = pygame.Vector2(0, 0)
+        self.speedometer.speed = 0
         self.lives = remaining_lives                    
         self.non_hit_scoring_streak = 0                     # dying resets scoring streak
         self.shield_regeneration = 0                        # dying resets shield regeneration rate
         self.shield_charge = PLAYER_STARTING_SHIELD         # shield inits at 10 strength when respawning
         self.shoot_timer = 0
 
-    def guide_to_bottom_centre(self, boss, dt):
-        # Target positions
-        boss_target_x, boss_target_y = SCREEN_WIDTH / 2,  125 
-        player_target_x, player_target_y = SCREEN_WIDTH / 2, SCREEN_HEIGHT * 0.9
-
-        # Check if already at the target (Stop movement, task done)
-        if self.position.distance_to((player_target_x, player_target_y)) < 10:
-            return
-
-        rect = boss.image.get_rect(topleft=boss.position)                               # Get centre of image
-        sprite_center = pygame.math.Vector2(rect.center)
-        boss_to_travel = sprite_center.distance_to((boss_target_x, boss_target_y))      # Get distance to target from centre of image
-        self_to_travel = self.position.distance_to((player_target_x, player_target_y))
-        boss_speed = FRAME_RATE / 2                                                     # Boss moved down at 1 per 2 frames 
-        if boss_to_travel == 0: boss_to_travel = 0.01                                   # prevent div/0
-        player_speed = (self_to_travel / boss_to_travel) * boss_speed                   # Synchronize speeds
-
-        # with open("logfile.csv", "a") as file:
-        #     file.write(f";x;{sprite_center.x};y;{sprite_center.y};{int(boss_to_travel)};x;{self.position.x};y;{round(self.position.y,1)};{int(self_to_travel)};{round(player_speed,2)};{round(boss_to_travel/ self_to_travel,2)}\n")
-
-        # Optionally increase speed slightly to make player arrive first
-        player_speed *= 1.35  # Increase by 25% (make sure player gets to his position first)
-
-        # Compute direction vector (normalized delta)
-        pdx = player_target_x - self.position.x
-        pdy = player_target_y - self.position.y
-        direction_x = (pdx / self_to_travel) if self_to_travel > 0 else 0
-        direction_y = (pdy / self_to_travel) if self_to_travel > 0 else 0
-
-        # print(f"{self.angle}->{self.angle + PLAYER_TURN_SPEED * dt}")
-        if self.angle < 180:
-            self.angle = min(self.angle + PLAYER_TURN_SPEED / 2 * dt, 180)
-        elif self.angle > 180:
-            self.angle = max(self.angle - PLAYER_TURN_SPEED / 2 * dt, 180)
-
-        # Update player's position incrementally based on speed and delta time (dt)
-        self.position.x += direction_x * player_speed * dt
-        self.position.y += direction_y * player_speed * dt
-
-    def guide_to_bottom_centre2(self):
+    def guide_to_bottom_centre(self):
+        self.guide_to_location(SCREEN_WIDTH / 2, SCREEN_HEIGHT * 0.9)
         
-        if self.position.x < SCREEN_WIDTH / 2:
-            self.position.x = min(self.position.x + 2, SCREEN_WIDTH / 2)
-        elif self.position.x > SCREEN_WIDTH / 2:
-            self.position.x = max(self.position.x - 2, SCREEN_WIDTH / 2)
-
-        if self.position.y < SCREEN_HEIGHT * 0.9:
-            self.position.y = min(self.position.y + 2, SCREEN_HEIGHT * 0.9 )
-        elif self.position.y > SCREEN_HEIGHT / 2:
-            self.position.y = max(self.position.y - 2, SCREEN_HEIGHT * 0.9)            
     
