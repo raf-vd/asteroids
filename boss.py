@@ -20,6 +20,7 @@ class Boss(pygame.sprite.Sprite):
         self.image = image  
         self.image.set_alpha(225)                           # Set transparency, values range from 0 (completely transparent) to 255 (completely opaque)
         self.mask = pygame.mask.from_surface(self.image)    # Create a mask from the non-transparent pixel
+        self.rect = self.image.get_rect()
         self.spawn_wait = 2
         self.ready = False
         self.bullets = []
@@ -28,21 +29,15 @@ class Boss(pygame.sprite.Sprite):
     def update(self, dt):
         self.basic_movement(dt)                                                                                               # Move around a bit
         if not self.ready: return                                                                                           # Fully spawn/descend first
-
         if self.boss_bullet_cooldown > 0:
             self.boss_bullet_cooldown -= dt
         else:
             self.boss_bullet_cooldown = 2
             dx = random.choice([int(self.position.x) - 185, int(self.position.x) + 175])
             self.bullets.append(BossBullet(self.image.get_width() / 2 + dx, self.position.y + self.image.get_height() - 10))     # spawn a bullet every 120 frames
-            # print(f"append bullet at {datetime.datetime.now()}")
-
-        # for bullet in self.bullets:
-        #     bullet.update(dt)
 
     def draw(self):
-        surface.blit(self.image, self.position)
-        # self.draw_bullets()
+        surface.blit(self.image, self.position)   
 
     def draw_bullets(self):
         for bullet in self.bullets:
@@ -63,7 +58,7 @@ class Boss(pygame.sprite.Sprite):
             return
         else:
             self.spawn_wait = 0                                     # make sure spawn_wait is at exactly 0, so not negative
-
+        
         if self.framecount % 300 == 0:                              # Every 300 frames => randomlt change directions (or not)
             self.horizontal = random.choice([1, -1])
             self.vertical = random.choice([1, -1])
@@ -148,7 +143,6 @@ class Boss(pygame.sprite.Sprite):
             bullet.update()
             if bullet.rect.y > SCREEN_HEIGHT:  # Remove off-screen bullets
                 self.bullets.remove(bullet)
-
 
     def fire_tracking_bullet(self, player_x, player_y):
         """Fire a slow tracking bullet at the player."""

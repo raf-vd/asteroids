@@ -1,6 +1,6 @@
 import pygame
 from constants import *
-from resources import background, boss_image, clock, font20_fsb, font64, game_over_sound, game_sounds, player_explosion_frames, screen, surface
+from resources import asteroid_break_channel, background, boss_image, clock, crack_lump_sound, font20_fsb, font64, game_over_sound, game_sounds, player_explosion_frames, screen, surface
 from functions import exit_msg, render_line
 from explosion import Explosion
 from asteroid import LumpyAsteroid
@@ -121,7 +121,27 @@ def refresh_screen(player, scoreboard):
     screen.blit(surface, (0, 0))                        # overlay surface
     pygame.display.flip()                               # refresh display
 
-def game_mechanics(asteroidfield, player, scoreboard, asteroids, boss_bullets, shots):
+def game_mechanics_boss(boss, player, scoreboard, boss_bullets, shots):
+
+    game_over =  False                                                      # Init game flow variables
+
+    for bb in boss_bullets:                                                 # BOSS DAMAGE
+
+        if game_over: return game_over                                      # Abort loop when game has ended
+
+        if player.collides(bb):                                             # PLAYER COLLISION DETECTION
+            if player.lives < 1:                                            
+                game_over = game_over_screen(scoreboard, player)            # Show endscore, track that game is over
+        
+    for bullet in shots:                                                    # PLAYER DAMAGE
+        boss.rect.topleft = (boss.position.x, boss.position.y)              # Move bounding rect to current boss position
+        if bullet.circle_vs_rect(boss.rect):                                # Bullet in boss rect => closer check through mask
+            if bullet.circle_vs_mask(boss.mask, boss.rect):                 # Check actual detailed hit through mask
+                asteroid_break_channel.play(crack_lump_sound)               # Play sound on hit
+
+    return game_over                                                        # Pass on game flow variables
+
+def game_mechanics(asteroidfield, player, scoreboard, asteroids, shots):
 
     game_over =  False                                                      # Init game flow variables
 
@@ -156,18 +176,9 @@ def game_mechanics(asteroidfield, player, scoreboard, asteroids, boss_bullets, s
             if player.lives < 1:                                            
                 game_over = game_over_screen(scoreboard, player)            # Show endscore, track that game is over
 
-    for bb in boss_bullets:                                                 # Loop used in boss fase
-
-        if game_over: return game_over                                      # Abort loop when game has ended
-
-        if player.collides(bb):                                             # PLAYER COLLISION DETECTION
-            if player.lives < 1:                                            
-                game_over = game_over_screen(scoreboard, player)            # Show endscore, track that game is over
-
     return game_over                                                        # Pass on game flow variables
 
 def game_loop(asteroidfield, boss, player, scoreboard, asteroids, boss_bullets, drawable, shots, updatable):
-# def game_loop(asteroidfield, drawable, updatable, asteroids, shots, player, scoreboard, boss):
     dt = 0                                                                                      # Init
     clock.tick()                                                                                # Reset the clock's time delta
     while True:
@@ -181,8 +192,11 @@ def game_loop(asteroidfield, boss, player, scoreboard, asteroids, boss_bullets, 
                     player.toggle_strafe()                                                      # Swap player strafe mode
             
         update_objects(updatable, dt, boss)                                                     # Recalculate all objects in updatable group
-        game_over = game_mechanics(asteroidfield, player, scoreboard, 
-                                   asteroids, boss_bullets, shots)                              # Perform actual game mechaniscs
+        if not player.boss_active():
+            game_over = game_mechanics(asteroidfield, player, scoreboard, asteroids, shots)     # Perform actual game mechaniscs
+        else:
+            game_over = game_mechanics_boss(boss, player, scoreboard, boss_bullets, shots)      # Perform actual game mechaniscs for boss fight
+
         if game_over: return 'MENU'                                                             # Game over => back to menu
             
         if scoreboard.level == BOSS_SPAWN_LEVEL and not player.boss_active():                   # Spawn boss
@@ -286,7 +300,6 @@ def main():
         elif game_state == "GAME":                                                              # Run the actual gameloop
             game_state = game_loop(asteroidfield, boss, player, scoreboard, 
                                    asteroids, boss_bullets, drawable, shots, updatable)
-            # game_state = game_loop(asteroidfield, drawable, updatable, asteroids, shots, player, scoreboard, boss)
 
     exit_msg()                                                                                  # Close the program with a final message
 

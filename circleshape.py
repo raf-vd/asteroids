@@ -1,6 +1,7 @@
 import pygame
-from resources import screen
+from functions import create_circle_mask
 from constants import *
+from resources import screen
 
 # Base class for game objects
 class CircleShape(pygame.sprite.Sprite):
@@ -19,6 +20,7 @@ class CircleShape(pygame.sprite.Sprite):
         self.radius = radius
         self.colour = (255, 255 , 255 , 255)
         self.image = None
+        self.mask = create_circle_mask(self.radius)             # Create a mask from the non-transparent pixel on the circle, better match than animated images mask
 
     def draw(self, screen): # sub-classes must override
         pass
@@ -32,8 +34,14 @@ class CircleShape(pygame.sprite.Sprite):
 
     def circle_vs_rect(self, rect): # Circle to Rectangle collision check
         expanded_rect = rect.inflate(self.radius * 2,self.radius * 2)           # Expanded rectangle to include the circle’s radius
-        return expanded_rect.collidepoint(self.position.x, self.position.y)
+        return expanded_rect.collidepoint(self.position.x, self.position.y)     # Returns true if point is on rect
 
+    def circle_vs_mask(self, mask, mask_rect):
+        offset_x = int(self.position.x - mask_rect.x - self.radius)     # Offset for the overlap: center the bullet relative to the boss rect
+        offset_y = int(self.position.y - mask_rect.y - self.radius)        
+        point = mask.overlap(self.mask, (offset_x, offset_y))           # Check for overlap between the bullet's circle mask and the given mask
+        return point is not None                                        # True if hitpoint is returned
+    
     # used for killing shots
     def is_off_screen(self):
          return (self.position.x < -ASTEROID_MAX_RADIUS or self.position.x > screen.get_width() + ASTEROID_MAX_RADIUS or
