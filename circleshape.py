@@ -67,18 +67,18 @@ class CircleShape(pygame.sprite.Sprite):
         old_y = self.position.y
 
         # Move CircleShape towards target coordinate
-        if self.position.x < x:     self.position.x = min(self.position.x + speed, x) 
-        elif self.position.x > x:   self.position.x = max(self.position.x - speed, x)
+        if self.position.x < x:     self.position.x = min(self.position.x + speed, x)               #  50 < 100 =>  53 = min( 50 + 3, 100)
+        elif self.position.x > x:   self.position.x = max(self.position.x - speed, x)               # 150 > 100 => 147 = max(150 - 3, 100)
         if self.position.y < y:     self.position.y = min(self.position.y + speed, y ) 
         elif self.position.y > y:   self.position.y = max(self.position.y - speed, y)            
-
+        # print(f"MAIN: Started at: ({old_x},{old_y} \t moved to: ({old_x},{old_y}) \t destination: ({x},{y})")
         # ASTEROIDS
         if hasattr(self, "lumps"):          # Asteroid move lumps according to main body
             for lump in self.lumps:
-                if old_x < x:       lump.position.x = lump.position.x + speed
-                elif old_x > x:     lump.position.x = lump.position.x - speed
-                if old_y < y:       lump.position.y = lump.position.y + speed
-                elif old_y > y:     lump.position.y = lump.position.y - speed
+                if old_x < x:       lump.position.x = lump.position.x + (self.position.x - old_x)   #  50 < 100 =>  63 =  60 + ( 53 -  50) 
+                elif old_x > x:     lump.position.x = lump.position.x - (old_x - self.position.x)   # 150 > 100 => 157 = 160 - (150 - 147) 
+                if old_y < y:       lump.position.y = lump.position.y + (self.position.y - old_y)
+                elif old_y > y:     lump.position.y = lump.position.y - (old_y - self.position.y)
 
         # PLAYERS
         if hasattr(self, "angle"):          # Face player upwards (work on base angle (<360) by using %)
@@ -86,5 +86,5 @@ class CircleShape(pygame.sprite.Sprite):
             if self.angle < angle:    self.angle = min(self.angle + 1, angle)
             elif self.angle > angle:  self.angle = max(self.angle - 1, angle)
 
-        # Remset velocity
+        # Reset velocity
         self.velocity = pygame.Vector2(0, 0)        

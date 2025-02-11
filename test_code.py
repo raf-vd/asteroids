@@ -78,21 +78,21 @@ def main():
         if not boss is None:
             boss.draw()
 
-        match track:
-            case 0: 
-                mv_ast.guide_to_location(25, 100,speed=1)
-                if mv_ast.position == (25, 100) : track += 1 
-            case 1: 
-                mv_ast.guide_to_location(25,300,speed=3)
-                if mv_ast.position == (25, 300): track += 1
-            case 2: 
-                mv_ast.guide_to_location(125,400,speed=1)
-                if mv_ast.position == (125, 400): track += 1
-            case 3: 
-                mv_ast.guide_to_location(525,600,speed=5)
-                if mv_ast.position == (525, 600): track += 1
-            case _: pass
-        mv_ast.draw()
+        # match track:
+        #     case 0: 
+        #         mv_ast.guide_to_location(25, 100,speed=1)
+        #         if mv_ast.position == (25, 100) : track += 1 
+        #     case 1: 
+        #         mv_ast.guide_to_location(25,300,speed=3)
+        #         if mv_ast.position == (25, 300): track += 1
+        #     case 2: 
+        #         mv_ast.guide_to_location(125,400,speed=1)
+        #         if mv_ast.position == (125, 400): track += 1
+        #     case 3: 
+        #         mv_ast.guide_to_location(525,600,speed=5)
+        #         if mv_ast.position == (525, 600): track += 1
+        #     case _: pass
+        # mv_ast.draw()
 
         homing_ast.guide_to_location(player.position.x, player.position.y, speed=1)
         homing_ast.draw()

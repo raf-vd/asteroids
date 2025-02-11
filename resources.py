@@ -33,6 +33,7 @@ if True:
     player_death_sound_path = resource_path("sound/crash.mp3")
     shield_hit_sound_path = resource_path("sound/buzz.mp3")
     shot_sound_path = resource_path("sound/shot.wav")
+    hitboss_path = resource_path("sound/hitboss.wav")
     # Music
     background_music = resource_path("sound/space_music.mp3")
 
@@ -45,6 +46,7 @@ if True:
     player_death_sound = pygame.mixer.Sound(player_death_sound_path)
     shield_hit_sound = pygame.mixer.Sound(shield_hit_sound_path)
     shot_sound = pygame.mixer.Sound(shot_sound_path)
+    hitboss_sound = pygame.mixer.Sound(hitboss_path)
     # Music
     background_music = pygame.mixer.music.load(background_music)
   # Volume control  
@@ -52,7 +54,8 @@ if True:
     crack_lump_sound.set_volume(0.3)
     crack_main_sound.set_volume(0.6)
     shot_sound.set_volume(0.2)
-    pygame.mixer.music.set_volume(0.25)
+    hitboss_sound.set_volume(0.2)
+    pygame.mixer.music.set_volume(0.10)
 
 # Fonts
 if True:

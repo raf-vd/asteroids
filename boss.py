@@ -22,6 +22,7 @@ class Boss(pygame.sprite.Sprite):
         self.mask = pygame.mask.from_surface(self.image)    # Create a mask from the non-transparent pixel
         self.rect = self.image.get_rect()
         self.spawn_wait = 2
+        self.hp = 25
         self.ready = False
         self.bullets = []
         self.boss_bullet_cooldown = 2                       # Time between boss bullets

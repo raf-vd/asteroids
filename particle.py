@@ -1,13 +1,74 @@
 import math, pygame, random
-from constants import PLAYER_TURN_SPEED
-from resources import screen
+from constants import PLAYER_TURN_SPEED, FRAME_RATE
+from resources import surface
 from enum import Enum
 
 ThrusterPosition = Enum("ThrusterPosition", ["BACK", "LEFT_FRONT", "LEFT_BACK", "RIGHT_FRONT", "RIGHT_BACK"])
 
 
-class Particle:
-    # def __init__(self, x, y, orientation, ship_velocity=pygame.Vector2(0,0), color=(255, 200, 0)):
+class ExplosionParticle:
+    def __init__(self, x, y, color):
+        self.x = x
+        self.y = y
+        self.size = 1
+        self.time_to_live = 0.2
+        self.updatefrequency = 3
+        self.grow_factor = 3
+        self.color = color
+
+    def update(self, dt):
+        if self.time_to_live > 0:                                           # Decrease time particle still has to live
+            self.time_to_live -= dt
+        if self.updatefrequency > 0:                                        # Decrease updatefrequency (tweak 'FLICKER & grow' effect here)
+            self.updatefrequency -= 1
+            return
+        self.size = self.size * (1 + self.grow_factor * self.time_to_live)  # Increase size (tweak 'flicker & GROW' effect here)
+
+    def draw(self):
+        pygame.draw.circle(surface, self.color, (int(self.x), int(self.y)), self.size)
+
+    def is_alive(self):
+        return self.time_to_live > 0
+    
+
+class ExplosionParticleCloud:
+    def __init__(self, x, y, duration=5.0, size=15):
+        self.x = x
+        self.y = y
+        self.size = size
+        self.time_to_live = duration
+        self.create_frequency = 0
+        self.particles = []
+
+    def update(self, dt):
+        self.generate_particles(dt)                                         # generate new particles to keep explosion going
+        self.particles = [p for p in self.particles if p.is_alive()]        # Remove dead particles from list
+        for particle in self.particles:                                    
+            particle.update(dt)                                             # Update the living particles
+
+    def draw(self):
+        for particle in self.particles:
+            particle.draw()
+
+    def generate_particles(self, dt):
+        if self.time_to_live > 0:                                           # Decrease time the cloud will stay generating particles
+            self.time_to_live -= dt
+        else:
+            return                                                          # Abort creation when no longer active
+        if self.create_frequency > 0:                                       # Control how fast particles are added to a cloud
+            self.create_frequency -= 1
+            return                                                          # Only create every so aften
+        else:
+            self.create_frequency = int(FRAME_RATE / 4)                     # Circle calue
+        self.particles.append(                                                 
+                ExplosionParticle(random.randint(-self.size,self.size) + self.x, 
+                                  random.randint(-self.size,self.size) + self.y, 
+                                  (230 + random.randint(0,25), 150 + random.randint(0, 100), random.randint(0,50), 175)))    # 'Yellow/Orange/Red-ish', trying to look like explosion colors
+
+    def is_active(self):
+        return self.time_to_live > 0
+
+class ThrusterParticle:
     def __init__(self, ship, thruster_position=ThrusterPosition.BACK, color=(255, 200, 0)):        
         self.ship = ship
         self.x, self.y = self.__get_coordinates(thruster_position)
@@ -91,7 +152,8 @@ class Particle:
         return self.current_life > 0
 
     def draw(self):
-        pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.size)
+        pygame.draw.circle(surface, self.color, (int(self.x), int(self.y)), self.size)
+
 
 class ParticleSystem:
     def __init__(self, ship, thruster_position=ThrusterPosition.BACK):
@@ -100,7 +162,7 @@ class ParticleSystem:
         self.particles = []
     
     def create_particle(self, color=(255, 200, 0)):
-        particle = Particle(self.ship, self.thruster_position, color)
+        particle = ThrusterParticle(self.ship, self.thruster_position, color)
         self.particles.append(particle)
 
     def create_particles(self, count=1):
@@ -115,6 +177,6 @@ class ParticleSystem:
         for particle in self.particles:
             particle.update()
     
-    def draw(self, ):
+    def draw(self):
         for particle in self.particles:
             particle.draw()
