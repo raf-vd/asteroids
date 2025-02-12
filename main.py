@@ -6,6 +6,7 @@ from explosion import Explosion
 from asteroid import LumpyAsteroid
 from asteroidfield import AsteroidField
 from boss import Boss, BossBullet
+from health_bar import HealthBar
 from menu import Menu
 from particle import ExplosionParticleCloud
 from player import Player, PowerUp
@@ -87,6 +88,7 @@ def game_over_screen(scoreboard, player):                                       
             player_explosion.current_frame = 0
         
         scoreboard.game_over()                                                  # Show final score
+        screen.blit(surface, (0, 0))                                            # overlay surface
         pygame.display.flip()
         dt += clock.tick(FRAME_RATE)/1000
 
@@ -144,9 +146,10 @@ def game_mechanics_boss(boss, explosions, player, scoreboard, boss_bullets, shot
             boss.rect.topleft = (boss.position.x, boss.position.y)              # Move bounding rect to current boss position
             if bullet.circle_vs_rect(boss.rect):                                # Bullet in boss rect => closer check through mask
                 if bullet.circle_vs_mask(boss.mask, boss.rect):                 # Check actual detailed hit through mask
-                    explosions.append(ExplosionParticleCloud(bullet.position.x, bullet.position.y, 1))
-                    bullet.kill()
                     asteroid_break_channel.play(hitboss_sound)                  
+                    explosions.append(ExplosionParticleCloud(bullet.position.x, bullet.position.y, 0.5))
+                    boss.health_bar.decrease(1)
+                    bullet.kill()
                     # asteroid_break_channel.play(hitboss_sound)                  # Play sound on hit
                     boss.hp -= 1
                     if boss.hp < 1:
@@ -202,7 +205,7 @@ def game_loop(asteroidfield, boss, player, scoreboard, asteroids, boss_bullets, 
             if event.type == pygame.QUIT:
                 exit_msg()                                                                      # Forced quit by x on window
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:                   # Allow menu access in the game loop
-                return 'PAUSE'
+                return boss, 'PAUSE'
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_TAB:   
                     player.toggle_strafe()                                                      # Swap player strafe mode
@@ -215,7 +218,7 @@ def game_loop(asteroidfield, boss, player, scoreboard, asteroids, boss_bullets, 
             game_over = game_mechanics_boss(boss, explosions, player, 
                                             scoreboard, boss_bullets, shots)                    # Perform actual game mechaniscs for boss fight
 
-        if game_over: return 'MENU'                                                             # Game over => back to menu
+        if game_over: return boss, 'MENU'                                                       # Game over => back to menu
             
         if scoreboard.level == BOSS_SPAWN_LEVEL and not player.boss_active():                   # Spawn boss
             asteroidfield.kill()                                                                # Stop spawning asteroids
@@ -262,6 +265,7 @@ def main():
     Boss.containers = (drawable, updatable)
     BossBullet.containers = (boss_bullets, drawable, updatable)
     Explosion.containers = (drawable, updatable)
+    HealthBar.containers = (updatable)
     LumpyAsteroid.containers = (asteroids, drawable, updatable)
     Player.containers = (drawable, updatable)
     Shot.containers = (drawable, shots, updatable)
@@ -316,8 +320,8 @@ def main():
             current_menu.update_visibility(game_paused)                                         # Regular menu flow: update visibility by default
 
         elif game_state == "GAME":                                                              # Run the actual gameloop
-            game_state = game_loop(asteroidfield, boss, player, scoreboard, 
-                                   asteroids, boss_bullets, drawable, shots, updatable)
+            boss, game_state = game_loop(asteroidfield, boss, player, scoreboard, 
+                                         asteroids, boss_bullets, drawable, shots, updatable)
 
     exit_msg()                                                                                  # Close the program with a final message
 

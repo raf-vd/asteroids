@@ -1,5 +1,5 @@
 import math, pygame, random
-from constants import PLAYER_TURN_SPEED, FRAME_RATE
+from constants import PLAYER_TURN_SPEED, FRAME_RATE, PARTICLE_CLOUD_DENSITY
 from resources import surface
 from enum import Enum
 
@@ -59,10 +59,11 @@ class ExplosionParticleCloud:
             self.create_frequency -= 1
             return                                                          # Only create every so aften
         else:
-            self.create_frequency = int(FRAME_RATE / 4)                     # Circle calue
+            self.create_frequency = int(FRAME_RATE / 
+                                        PARTICLE_CLOUD_DENSITY)             # Circle calue (60/30=every2 frames a particle is added)
         self.particles.append(                                                 
                 ExplosionParticle(random.randint(-self.size,self.size) + self.x, 
-                                  random.randint(-self.size,self.size) + self.y, 
+                                  random.randint(-self.size,self.size) + self.y - 15, 
                                   (230 + random.randint(0,25), 150 + random.randint(0, 100), random.randint(0,50), 175)))    # 'Yellow/Orange/Red-ish', trying to look like explosion colors
 
     def is_active(self):

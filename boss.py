@@ -4,7 +4,7 @@ from constants import *
 from functions import scale_to_circle
 from resources import boss_bullet_frames, surface
 from circleshape import CircleShape
-
+from health_bar import HealthBar
 
 class Boss(pygame.sprite.Sprite):
     def __init__(self, x, y, image):
@@ -22,14 +22,23 @@ class Boss(pygame.sprite.Sprite):
         self.mask = pygame.mask.from_surface(self.image)    # Create a mask from the non-transparent pixel
         self.rect = self.image.get_rect()
         self.spawn_wait = 2
+        self.max_hp = 25
         self.hp = 25
+        self.health_bar = None
         self.ready = False
+        self.alive = True
         self.bullets = []
         self.boss_bullet_cooldown = 2                       # Time between boss bullets
+        self.boss_laser_cooldown = 5                       # Time between boss bullets
 
     def update(self, dt):
         self.basic_movement(dt)                                                                                               # Move around a bit
         if not self.ready: return                                                                                           # Fully spawn/descend first
+        if self.boss_laser_cooldown > 0:
+            self.boss_laser_cooldown -= dt
+        else:
+            self.boss_laser_cooldown = 5            
+
         if self.boss_bullet_cooldown > 0:
             self.boss_bullet_cooldown -= dt
         else:
@@ -38,11 +47,16 @@ class Boss(pygame.sprite.Sprite):
             self.bullets.append(BossBullet(self.image.get_width() / 2 + dx, self.position.y + self.image.get_height() - 10))     # spawn a bullet every 120 frames
 
     def draw(self):
-        surface.blit(self.image, self.position)   
+        surface.blit(self.image, self.position)                     # Draw boss
+        if self.health_bar: 
+            self.health_bar.draw(self.position)                     # Draw healthbar (only active after fully spawning in)
+        if self.boss_laser_cooldown < 1:
+            dx = random.randint(0, 100)
+            if self.position.x + (self.image.get_width() / 2) > (SCREEN_WIDTH / 2): dx = -dx
+            xfire = self.position.x + (self.image.get_width() / 2)
+            yfire = self.position.y + 50 + (self.image.get_height() / 2)
+            pygame.draw.line(surface, (150,255,255,128), (xfire, yfire), (self.position.x + (self.image.get_width()/2) + dx ,SCREEN_HEIGHT), 5)
 
-    def draw_bullets(self):
-        for bullet in self.bullets:
-            bullet.draw()
 
     def basic_movement(self, dt):
         self.framecount += 1                                        # Speed controlled by framerate
@@ -51,7 +65,9 @@ class Boss(pygame.sprite.Sprite):
             if self.framecount % 2 == 0: return                     # Reduce descendin speed (1x every 2 frames)
             self.framecount = 0                                     # Reset framecount
             self.position.y += 1                                    # Move down
-            if self.position.y == self.target_y1: self.ready =True  # Reached descent/entry
+            if self.position.y == self.target_y1: 
+                self.ready =True                                    # Reached descent/entry => create healthbar
+                self.health_bar = HealthBar(self.image.get_width(), 15, self.max_hp)
             return 
         
         if self.spawn_wait > 0:                                     # Hold still for 2s after arriving at low point
@@ -74,25 +90,31 @@ class Boss(pygame.sprite.Sprite):
         if self.position.x == self.target_x2: self.horizontal = -1 
         self.position.x += 1 * self.horizontal                      # Move horizontally
 
+    def reduce_hp(self, damage):
+        self.hp -= damage
+        self.health_bar.decrease(damage)
+        if self.hp <= 0:
+            self.alive = False
+
     def BOOTS__init__(self, image, x, y, width, height, hp):
         self.image = image
         self.x = x
         self.y = y
-        self.target_y = 100  # Where the boss will stop moving
-        self.width = width
-        self.height = height
-        self.hp = hp
-        self.alive = True
-        self.parts = {
-            "core": {"rect": pygame.Rect(x + 50, y + 50, 100, 100), "hp": 100},
-            "left_wing": {"rect": pygame.Rect(x, y + 50, 50, 100), "hp": 50},
-            "right_wing": {"rect": pygame.Rect(x + 150, y + 50, 50, 100), "hp": 50}
-        }
-        self.bullets = []
-        self.last_shot_time = 0
-        self.shield_active = True
-        self.shield_hp = 200  # Shield health
-        self.max_shield_hp = 200  # For visual purposes        
+        # self.target_y = 100  # Where the boss will stop moving
+        # self.width = width
+        # self.height = height
+        # self.hp = hp
+        # self.alive = True
+        # self.parts = {
+        #     "core": {"rect": pygame.Rect(x + 50, y + 50, 100, 100), "hp": 100},
+        #     "left_wing": {"rect": pygame.Rect(x, y + 50, 50, 100), "hp": 50},
+        #     "right_wing": {"rect": pygame.Rect(x + 150, y + 50, 50, 100), "hp": 50}
+        # }
+        # self.bullets = []
+        # self.last_shot_time = 0
+        # self.shield_active = True
+        # self.shield_hp = 200  # Shield health
+        # self.max_shield_hp = 200  # For visual purposes        
 
     def BOOTS_draw(self, surface):
         """Draw the boss and its parts."""
@@ -109,12 +131,7 @@ class Boss(pygame.sprite.Sprite):
             self.draw_shield(surface)
             self.draw_bullets(surface)
 
-    def reduce_hp(self, damage):
-        self.hp -= damage
-        if self.hp <= 0:
-            self.alive = False
-
-    def take_damage(self, part_name, damage):
+    def BOOTS_take_damage(self, part_name, damage):
         """Handle damage dealt to the boss or its shield."""
         if self.shield_active:  # Damage the shield first
             self.shield_hp -= damage
@@ -130,7 +147,7 @@ class Boss(pygame.sprite.Sprite):
                     print(f"{part_name} destroyed!")
                     # Optional: Hide the destroyed part or spawn debris            
 
-    def fire_straight_bullets(self):
+    def BOOTS_fire_straight_bullets(self):
         """Fire bullets downward at regular intervals."""
         current_time = pygame.time.get_ticks()
         if current_time - self.last_shot_time > 1000:  # Fire every 1000ms
@@ -138,18 +155,11 @@ class Boss(pygame.sprite.Sprite):
             self.bullets.append(BossBullet(self.x + 125, self.y + 100, 5))
             self.last_shot_time = current_time
 
-    def update_bullets(self):
-        """Update and remove off-screen bullets."""
-        for bullet in self.bullets[:]:
-            bullet.update()
-            if bullet.rect.y > SCREEN_HEIGHT:  # Remove off-screen bullets
-                self.bullets.remove(bullet)
-
-    def fire_tracking_bullet(self, player_x, player_y):
+    def BOOTS_fire_tracking_bullet(self, player_x, player_y):
         """Fire a slow tracking bullet at the player."""
         self.bullets.append(TrackingBullet(self.x + 100, self.y + 100, player_x, player_y, 2))  # Moderate speed
 
-    def draw_shield(self, surface):
+    def BOOTS_draw_shield(self, surface):
         """Visual representation of the shield as a circle or glow."""
         if self.shield_active:
             # Draw the shield as a translucent circle around the boss
@@ -168,7 +178,6 @@ class Boss(pygame.sprite.Sprite):
             if part["hp"] <= 0:
                 print(f"{part_name} is no longer functioning!")
 
-        self.update_bullets()
 
 class BossBullet(CircleShape):
     def __init__(self, x, y, radius=25, speed=2):
@@ -206,7 +215,7 @@ class BossBullet(CircleShape):
             surface.blit(self.image, rect)
             # pygame.draw.circle(surface, "white", self.position, self.radius , 1)
 
-class TrackingBullet:
+class TrackingBullet: # BOOTS
     def __init__(self, x, y, target_x, target_y, speed):
         self.x, self.y = x, y
         # Calculate direction

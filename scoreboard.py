@@ -1,6 +1,6 @@
 from constants import *
 from functions import rect_surface, render_line
-from resources import font20, font24, font36, font48, game_sounds, level_up_sound, screen
+from resources import font20, font24, font36, font48, game_sounds, level_up_sound, surface
 
 class ScoreBoard():
 
@@ -16,7 +16,7 @@ class ScoreBoard():
         render_line(font48, f"GAME OVER", bar_surface, (255, 0, 0, 100), 125)
         render_line(font48, f"Final level: {self.level}", bar_surface, (255, 255, 255, 0), 200)
         render_line(font36, f"Press ESC to continue", bar_surface, (0, 0, 0, 0), bar_surface.get_height() - 25)
-        screen.blit(bar_surface, ((SCREEN_WIDTH - bar_surface.get_width()) / 2, (SCREEN_HEIGHT - bar_surface.get_height()) / 2))
+        surface.blit(bar_surface, ((SCREEN_WIDTH - bar_surface.get_width()) / 2, (SCREEN_HEIGHT - bar_surface.get_height()) / 2))
 
     def __draw_shield_bar(self, player):
 
@@ -54,8 +54,8 @@ class ScoreBoard():
             text_rect = text_surface.get_rect(center=(bar_width / 2, bar_height / 2))
             bar_surface.blit(text_surface, text_rect)
 
-            # Blit the bar onto the screen
-            screen.blit(bar_surface, (bar_x, bar_y))    
+            # Blit the bar onto the surface
+            surface.blit(bar_surface, (bar_x, bar_y))    
 
     def add(self, value = 1): # If new level is reached, return True, if notn return False
         self.score += value
@@ -85,10 +85,10 @@ class ScoreBoard():
         level_text = font24.render(f"Level: {self.level}", True, "white")
         upgrades_text = font20.render(f"Active upgrades: {self.__get_upgrades(player)}", True, "black", "white")
 
-        screen.blit(score_text, (10, 10))
-        screen.blit(lives_text, (10, 35))
-        screen.blit(level_text, (10, 60))
-        screen.blit(upgrades_text, (10, screen.get_height()-30))
+        surface.blit(score_text, (10, 10))
+        surface.blit(lives_text, (10, 35))
+        surface.blit(level_text, (10, 60))
+        surface.blit(upgrades_text, (10, SCREEN_HEIGHT-30))
         self.__draw_shield_bar(player)
     
     
