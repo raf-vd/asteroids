@@ -30,6 +30,7 @@ class Boss(pygame.sprite.Sprite):
         self.bullets = []
         self.boss_bullet_cooldown = 2                       # Time between boss bullets
         self.boss_laser_cooldown = 5                       # Time between boss bullets
+        self.laser_radius = 1
 
     def update(self, dt):
         self.basic_movement(dt)                                                                                               # Move around a bit
@@ -55,8 +56,20 @@ class Boss(pygame.sprite.Sprite):
             if self.position.x + (self.image.get_width() / 2) > (SCREEN_WIDTH / 2): dx = -dx
             xfire = self.position.x + (self.image.get_width() / 2)
             yfire = self.position.y + 50 + (self.image.get_height() / 2)
+            pygame.draw.circle(surface, (150,255,255,128), (xfire, yfire), 6, 0)
             pygame.draw.line(surface, (150,255,255,128), (xfire, yfire), (self.position.x + (self.image.get_width()/2) + dx ,SCREEN_HEIGHT), 5)
-
+        elif self.boss_laser_cooldown < 1.1:
+            xfire = self.position.x + (self.image.get_width() / 2)
+            yfire = self.position.y + 50 + (self.image.get_height() / 2)
+            self.laser_radius *= 1.2
+            pygame.draw.circle(surface, (150,255,255,128), (xfire, yfire), self.laser_radius, 0)
+        elif self.boss_laser_cooldown < 2:
+            xfire = self.position.x + (self.image.get_width() / 2)
+            yfire = self.position.y + 50 + (self.image.get_height() / 2)
+            self.laser_radius += 0.175
+            pygame.draw.circle(surface, (150,255,255,128), (xfire, yfire), self.laser_radius, 0)
+        else:
+            self.laser_radius = 1
 
     def basic_movement(self, dt):
         self.framecount += 1                                        # Speed controlled by framerate
