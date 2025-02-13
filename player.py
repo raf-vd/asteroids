@@ -30,6 +30,7 @@ class Player(CircleShape):
         self.spawn_guard = PLAYER_SPAWN_SAFEGUARD
         self.lives = PLAYER_STARTING_LIVES
         self.shield_charge = PLAYER_STARTING_SHIELD
+        self.laser_hit_registration_cooldown = 0.0
         self.shield_regeneration = 0
         self.non_hit_scoring_streak = 0
         self.alpha = 255
@@ -39,7 +40,7 @@ class Player(CircleShape):
         self.rear_thrusterL = ParticleSystem(self, ThrusterPosition.LEFT_BACK)
         self.rear_thruster = ParticleSystem(self, ThrusterPosition.BACK)
         self.rear_thrusterR = ParticleSystem(self, ThrusterPosition.RIGHT_BACK)
- 
+
     def toggle_strafe(self):
         self.__strafe_active = not self.__strafe_active
 
@@ -159,7 +160,7 @@ class Player(CircleShape):
             slowing_force = self.velocity.normalize() * slow_factor     
             self.velocity -= slowing_force * dt                         # Reduce velocity natural drag or braking force in slow_factor
 
-    def update(self, dt, boss=None):                                   # Process inputs from keys and do all sorts of changes to player
+    def update(self, dt, boss=None):                        # Process inputs from keys and do all sorts of changes to player
 
         self.last_rotation = 0                              # Init rotation to keep track how much rotation there was in a frame
 
@@ -167,7 +168,8 @@ class Player(CircleShape):
             self.__respawn_countdown -= dt
             return False                                    # Don't do anything while respawn cooldown is active
 
-        self.shoot_timer -= dt                              # Reduce the cooldown on the player's ability to shoor
+        self.shoot_timer -= dt                              # Reduce the cooldown on the player's ability to shoot
+        self.laser_hit_registration_cooldown -= dt          # Reduce the cooldown on the player's laser protection
         
         if self.spawn_guard > 0:                            # Change player transparancy when he respanws (fluctuating formula)
             self.alpha = 75 + int(125 * (math.sin(pygame.time.get_ticks() / 200) + 1) / 2)
@@ -258,7 +260,7 @@ class Player(CircleShape):
 
                 self.non_hit_scoring_streak = 0                             # hits on shield resets scoring streak
                 self.shield_regeneration * 0.9                              # hits on shield decrease regeneration rate
-                self.activate_upgrade(PowerUp.DECREASE_SHIELD, 1)                 # reduce shieldcharge on hit
+                self.activate_upgrade(PowerUp.DECREASE_SHIELD, 1)           # reduce shieldcharge on hit
                 return False                                                # return False prevent hits from hitting player while shielded
 
         # Broad check: circular player outside mainradius + lumpradius
@@ -311,28 +313,56 @@ class Player(CircleShape):
                 return True
             
         return False
+    
+    def take_laser_hit(self):
+        # disable taking hits for PLAYER_SPAWN_SAFEGUARD seconds after spawning
+        # (this will also safeguard player during respawn cooldown)
+        if self.spawn_guard > 0:                                                    # Prevent colision while recently reswpawned
+            return False              
+        
+        if self.laser_hit_registration_cooldown <= 0:                               # Check if player can be hit by laser (prevent instant kill by FRAME_RATE/s hits)
+            if self.shield_charge > 0:                      
+                if not alert_channel.get_busy():                                    # Don't play shield buzz when alert is playing
+                    if not shield_channel.get_busy():                               # Avoid overlapping same sound multiple times
+                        shield_channel.play(shield_hit_sound)                       # warning buzz
+                self.activate_upgrade(PowerUp.DECREASE_SHIELD, LASER_HIT_DAMAGE)    # If hit when shielded => reduce shield
+            else:
+                if self.lose_life():
+                    return True                                                     # Abort all when lost last life
+                self.explode_and_respawn()                                          # Show explosion and respawn at correct position
+                return True
+            self.laser_hit_registration_cooldown = LASER_HIT_REGISTRATION_COOLDOWN  # Survived the hit, reset hit cooldown protection
+            return True                                                             # Hit registered
+
+        return False                                                                # Still in laser cooldown protection => not hit
+    
+    def explode_and_respawn(self):
+        Explosion(self.position, 1, player_explosion_frames)                                    # Go BOOM
+        if self.boss_active():
+            self.__respawn(pygame.Vector2(SCREEN_WIDTH / 2, SCREEN_HEIGHT * 0.9), self.lives)   # Respawn player in lower centre of screen
+        else:
+            self.__respawn(pygame.Vector2(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2), self.lives)     # Respawn player in centre of screen          
 
     def collides(self, target):
         # disable collision for PLAYER_SPAWN_SAFEGUARD seconds after spawning
         # (this will also safeguard player during respawn cooldown)
-        if self.spawn_guard > 0:                                                                    # Prevent colision while recently reswpawned
+        if self.spawn_guard > 0:                                                                # Prevent colision while recently reswpawned
             return False                       
         
-        if self.check_collision(target): 
-            if alert_channel.get_busy(): alert_channel.stop()                                       # Stop whatever the channel is playing
-            alert_channel.play(player_death_sound)                                                  # Play crash sound
-            self.lives -= 1                                                                         # Player collided, take a life awat
-            if self.lives == 0:                                                                     # Out of lives => game ends
-                return True                             
-            Explosion(self.position, 1, player_explosion_frames)                                    # Go BOOM
-            if self.boss_active():
-                self.__respawn(pygame.Vector2(SCREEN_WIDTH / 2, SCREEN_HEIGHT * 0.9), self.lives)   # Respawn player in lower centre of screen
-            else:
-                self.__respawn(pygame.Vector2(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2), self.lives)     # Respawn player in centre of screen          
+        if self.check_collision(target):                                                        # Check collision
+            if self.lose_life():
+                return True                                                                     # Abort all when lost last life
+            self.explode_and_respawn()                                                          # Show explosion and respawn at correct position
             return True
-        
-        return False                                                                                # No collision
-    
+        return False                                                                            # No collision
+
+    def lose_life(self):
+        if alert_channel.get_busy(): alert_channel.stop()                                       # Stop whatever the channel is playing
+        alert_channel.play(player_death_sound)                                                  # Play crash sound
+        self.lives -= 1                                                                         # Player collided, take a life awat
+        if self.lives == 0:  return True                                                        # Out of lives => game ends
+        return False                                                                            # Still lives remaining
+
     def activate_upgrade(self, upgrade, value=1):
 
         match upgrade:

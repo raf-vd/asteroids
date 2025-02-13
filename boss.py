@@ -1,7 +1,7 @@
 import pygame
 import random
 from constants import *
-from functions import scale_to_circle
+from functions import point_to_line_distance, scale_to_circle
 from resources import boss_bullet_frames, surface
 from circleshape import CircleShape
 from health_bar import HealthBar
@@ -29,47 +29,53 @@ class Boss(pygame.sprite.Sprite):
         self.alive = True
         self.bullets = []
         self.boss_bullet_cooldown = 2                       # Time between boss bullets
-        self.boss_laser_cooldown = 5                       # Time between boss bullets
-        self.laser_radius = 1
+        self.laser_cooldown = 10                            # Time between boss laser activations
+        self.laser_radius = 1                               # Init laser spawning point radius
+        self.laser_x = SCREEN_WIDTH                         # Init lasertarget x coordinate
+        self.laser_color = (150,255,255,128)
 
-    def update(self, dt):
-        self.basic_movement(dt)                                                                                               # Move around a bit
-        if not self.ready: return                                                                                           # Fully spawn/descend first
-        if self.boss_laser_cooldown > 0:
-            self.boss_laser_cooldown -= dt
+    def update(self, dt, player):
+        self.basic_movement(dt)                                                                                                 # Move around a bit
+        if not self.ready: return                                                                                               # Fully spawn/descend first
+
+        if self.laser_cooldown > 0:                                                                                        # Control laser frequency
+            self.laser_cooldown -= dt
         else:
-            self.boss_laser_cooldown = 5            
+            self.laser_cooldown = 5
+        
+        if self.laser_cooldown < 1:                                                                                             # Charge and Fire laser in 3 steps
+            dx = random.randint(0, 100)
+            if self.position.x + (self.image.get_width() / 2) > (SCREEN_WIDTH / 2): dx = -dx                                    # Aim a bit left/right from center when boss is right/left
+            self.laser_x = self.position.x + (self.image.get_width()/2) + dx                                                    # Store aim (for collision & drawing)
+            self.laser_radius = 6                                                                                               # Store laser spawn spot size in attribute for reference while firing
+            if self.laser_hits_target(player): player.take_laser_hit()                                                          # Check & handle if/when lear hit the player
+        elif self.laser_cooldown < 1.1:
+            self.laser_radius *= 1.2                                                                                            # Increase radius for burst-out effect right before firing
+        elif self.laser_cooldown < 2:
+            self.laser_radius += 0.175                                                                                          # Build up radius to indicate charging laser a bit before firing
+        else:
+            self.laser_radius = 1                                                                                               # Reset laser radius
 
-        if self.boss_bullet_cooldown > 0:
+        if self.boss_bullet_cooldown > 0:                                                                                       # Control boss bulllet frequency
             self.boss_bullet_cooldown -= dt
         else:
-            self.boss_bullet_cooldown = 2
-            dx = random.choice([int(self.position.x) - 185, int(self.position.x) + 175])
-            self.bullets.append(BossBullet(self.image.get_width() / 2 + dx, self.position.y + self.image.get_height() - 10))     # spawn a bullet every 120 frames
+            self.boss_bullet_cooldown = 2                                   
+            dx = random.choice([int(self.position.x) - 185, int(self.position.x) + 175])                                        # Randomly pick Left or Right side to fire from
+            self.bullets.append(BossBullet(self.image.get_width() / 2 + dx, self.position.y + self.image.get_height() - 10))    # Spawn a bullet when timer reaches 0
 
     def draw(self):
-        surface.blit(self.image, self.position)                     # Draw boss
+        surface.blit(self.image, self.position)                             # Draw boss
         if self.health_bar: 
-            self.health_bar.draw(self.position)                     # Draw healthbar (only active after fully spawning in)
-        if self.boss_laser_cooldown < 1:
-            dx = random.randint(0, 100)
-            if self.position.x + (self.image.get_width() / 2) > (SCREEN_WIDTH / 2): dx = -dx
-            xfire = self.position.x + (self.image.get_width() / 2)
-            yfire = self.position.y + 50 + (self.image.get_height() / 2)
-            pygame.draw.circle(surface, (150,255,255,128), (xfire, yfire), 6, 0)
-            pygame.draw.line(surface, (150,255,255,128), (xfire, yfire), (self.position.x + (self.image.get_width()/2) + dx ,SCREEN_HEIGHT), 5)
-        elif self.boss_laser_cooldown < 1.1:
-            xfire = self.position.x + (self.image.get_width() / 2)
-            yfire = self.position.y + 50 + (self.image.get_height() / 2)
-            self.laser_radius *= 1.2
-            pygame.draw.circle(surface, (150,255,255,128), (xfire, yfire), self.laser_radius, 0)
-        elif self.boss_laser_cooldown < 2:
-            xfire = self.position.x + (self.image.get_width() / 2)
-            yfire = self.position.y + 50 + (self.image.get_height() / 2)
-            self.laser_radius += 0.175
-            pygame.draw.circle(surface, (150,255,255,128), (xfire, yfire), self.laser_radius, 0)
-        else:
-            self.laser_radius = 1
+            self.health_bar.draw(self.position)                             # Draw healthbar (only active after fully spawning in)
+        self.draw_laser((150,255,255,128), self.laser_x, SCREEN_HEIGHT)     # Draw laser
+
+    def draw_laser(self, color, x2, y2):
+        x_start = self.position.x + (self.image.get_width() / 2)                            # Laser starting point coordinates
+        y_start = self.position.y + 50 + (self.image.get_height() / 2)
+        if self.laser_cooldown  < 1:
+            pygame.draw.line(surface, color, (x_start, y_start), (x2, y2), 5)               # Draw laser in final second of timer
+        if self.laser_cooldown < 2:
+            pygame.draw.circle(surface, color, (x_start, y_start), self.laser_radius, 0)    # Draw laser spawning spot in last 2 seconds of timer
 
     def basic_movement(self, dt):
         self.framecount += 1                                        # Speed controlled by framerate
@@ -108,6 +114,17 @@ class Boss(pygame.sprite.Sprite):
         self.health_bar.decrease(damage)
         if self.hp <= 0:
             self.alive = False
+
+    def laser_hits_target(self, player):
+        # Get laser start/end in vectors
+        laser_start = pygame.Vector2(self.position.x + (self.image.get_width() / 2), self.position.y + 50 + (self.image.get_height() / 2))  
+        laser_end = pygame.Vector2(self.laser_x, SCREEN_HEIGHT)                                                                                 
+        distance = point_to_line_distance(player.position, laser_start, laser_end)              # Get distance from player centre to line
+        if player.shield_charge > 0:
+            # print(f"dis: {distance:<20}shr: 12.5+{player.radius}+{player.shield_charge}= {player.radius + 10 + player.shield_charge + 2.5}" )
+            return distance <= (player.radius + 10 + player.shield_charge + 2.5)                # If shield is active, check against shield radius + half line width
+        else:
+            return distance <= (player.radius + 2.5)                                            # For non-shielded player, check against player radius + half line width
 
     def BOOTS__init__(self, image, x, y, width, height, hp):
         self.image = image

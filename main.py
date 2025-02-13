@@ -92,31 +92,26 @@ def game_over_screen(scoreboard, player):                                       
         pygame.display.flip()
         dt += clock.tick(FRAME_RATE)/1000
 
-def update_objects(updatable, dt, boss, explosions):
-    for explosion in explosions:
-        explosion.update(dt)
+def update_objects(updatable, dt, boss, player):
     for obj in updatable: 
         if isinstance(obj, Player):
             obj.update(dt, boss)
+        elif isinstance(obj, Boss):
+            obj.update(dt, player)
         else:
             obj.update(dt)
 
-def draw_objects(drawable, explosions):
-    for obj in drawable:                                # Draw Asteroids/Boss, Explosions and Shots first
-        if (isinstance(obj, Boss) or                          
-            isinstance(obj, BossBullet) or 
-            isinstance(obj, LumpyAsteroid) or
-            isinstance(obj, Shot)):
+def draw_objects(drawable):
+    for obj in drawable:                                # Draw anything except player & asteroid explosions first
+        if not(isinstance(obj, Explosion) or
+               isinstance(obj, Player)):
             obj.draw()                                              
-    
-    for explosion in explosions:                        # Draw Explosions
-        explosion.draw()
 
     for play in drawable:                               # Draw player next (and speedometer)
         if isinstance(play, Player):   
             play.draw()
                 
-    for exp in drawable:                                # draw explosions last (to be on to of all)
+    for exp in drawable:                                # Draw asteroid explosions last (to be on to of all)
         if isinstance(exp, Explosion):   
             exp.draw()
 
@@ -129,7 +124,7 @@ def refresh_screen(player, scoreboard):
     screen.blit(surface, (0, 0))                        # overlay surface
     pygame.display.flip()                               # refresh display
 
-def game_mechanics_boss(boss, explosions, player, scoreboard, boss_bullets, shots):
+def game_mechanics_boss(boss, player, scoreboard, boss_bullets, shots):
 
     game_over =  False                                                      # Init game flow variables
 
@@ -147,11 +142,9 @@ def game_mechanics_boss(boss, explosions, player, scoreboard, boss_bullets, shot
             if bullet.circle_vs_rect(boss.rect):                                # Bullet in boss rect => closer check through mask
                 if bullet.circle_vs_mask(boss.mask, boss.rect):                 # Check actual detailed hit through mask
                     asteroid_break_channel.play(hitboss_sound)                  
-                    explosions.append(ExplosionParticleCloud(bullet.position.x, bullet.position.y, 0.5))
-                    boss.health_bar.decrease(1)
+                    ExplosionParticleCloud(bullet.position.x, bullet.position.y, 0.5)
+                    boss.reduce_hp(1)
                     bullet.kill()
-                    # asteroid_break_channel.play(hitboss_sound)                  # Play sound on hit
-                    boss.hp -= 1
                     if boss.hp < 1:
                         boss.kill()
                         boss.ready = False
@@ -197,7 +190,6 @@ def game_mechanics(asteroidfield, player, scoreboard, asteroids, shots):
     return game_over                                                        # Pass on game flow variables
 
 def game_loop(asteroidfield, boss, player, scoreboard, asteroids, boss_bullets, drawable, shots, updatable):
-    explosions = []
     dt = 0                                                                                      # Init
     clock.tick()                                                                                # Reset the clock's time delta
     while True:
@@ -210,13 +202,12 @@ def game_loop(asteroidfield, boss, player, scoreboard, asteroids, boss_bullets, 
                 if event.key == pygame.K_TAB:   
                     player.toggle_strafe()                                                      # Swap player strafe mode
             
-        update_objects(updatable, dt, boss, explosions)                                         # Recalculate all objects in updatable group
+        update_objects(updatable, dt, boss, player)                                             # Recalculate all objects in updatable group
         if not player.boss_active():
             game_over = game_mechanics(asteroidfield, player, 
                                        scoreboard, asteroids, shots)                            # Perform actual game mechaniscs
         else:
-            game_over = game_mechanics_boss(boss, explosions, player, 
-                                            scoreboard, boss_bullets, shots)                    # Perform actual game mechaniscs for boss fight
+            game_over = game_mechanics_boss(boss, player, scoreboard, boss_bullets, shots)      # Perform actual game mechaniscs for boss fight
 
         if game_over: return boss, 'MENU'                                                       # Game over => back to menu
             
@@ -226,11 +217,13 @@ def game_loop(asteroidfield, boss, player, scoreboard, asteroids, boss_bullets, 
                 asteroid.kill()                                                                 # Remove remaining asteroids
             # Spawn boss
             boss = Boss((SCREEN_WIDTH - boss_image.get_width())/ 2, -boss_image.get_height() - 10, boss_image)
+            player.shield_regeneration = 0
+            player.non_hit_scoring_streak = 0
             player.toggle_boss_mode()                
             if not player.strafe_active(): player.toggle_strafe()                                 # Force boss fase start in strafe mode
 
         clear_screen()                                                                          # Drawing section
-        draw_objects(drawable, explosions)
+        draw_objects(drawable)
         refresh_screen(player, scoreboard)
         dt = clock.tick(FRAME_RATE) / 1000                                                      # Game speed control
 
@@ -259,12 +252,13 @@ def main():
     boss_bullets = pygame.sprite.Group()
     drawable = pygame.sprite.Group()
     shots = pygame.sprite.Group()
-    updatable = pygame.sprite.Group()                                                           
+    updatable = pygame.sprite.Group() 
 
     AsteroidField.containers = updatable                                                        # containers
     Boss.containers = (drawable, updatable)
     BossBullet.containers = (boss_bullets, drawable, updatable)
     Explosion.containers = (drawable, updatable)
+    ExplosionParticleCloud.containers = (drawable, updatable)
     HealthBar.containers = (updatable)
     LumpyAsteroid.containers = (asteroids, drawable, updatable)
     Player.containers = (drawable, updatable)

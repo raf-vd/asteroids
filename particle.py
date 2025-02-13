@@ -31,8 +31,9 @@ class ExplosionParticle:
         return self.time_to_live > 0
     
 
-class ExplosionParticleCloud:
+class ExplosionParticleCloud(pygame.sprite.Sprite):
     def __init__(self, x, y, duration=5.0, size=15):
+        super().__init__(self.containers)                                   # Call the base class constructor to pass on the containers
         self.x = x
         self.y = y
         self.size = size
