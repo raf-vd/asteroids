@@ -1,6 +1,6 @@
 import pygame
 from constants import *
-from resources import asteroid_break_channel, background, boss_image, clock, font20_fsb, font64, game_over_sound, game_sounds, hitboss_sound, player_explosion_frames, screen, surface
+from resources import asteroid_break_channel, background, boss_image, clock, font20_fsb, font64, game_over_sound, game_won_sound, game_sounds, global_master_volume, hitboss_sound, player_explosion_frames, screen, surface
 from functions import exit_msg, render_line
 from explosion import Explosion
 from asteroid import LumpyAsteroid
@@ -11,6 +11,7 @@ from menu import Menu
 from particle import ExplosionParticleCloud
 from player import Player, PowerUp
 from scoreboard import ScoreBoard
+from slider import Slider
 from shot import Shot
 
 def menu_placeholder():
@@ -24,13 +25,44 @@ def menu_placeholder():
 
         clear_screen()                                                                          # Empty screen
 
-        bar_surface = pygame.Surface(screen.get_size(), pygame.SRCALPHA)                        # Create a surface for the menu to be drawn upon
-        bar_surface.fill((255, 255, 255, 100))                                                  # Fill surface with transparent white
+        menu_overlay = pygame.Surface(screen.get_size(), pygame.SRCALPHA)                        # Create a surface for the menu to be drawn upon
+        menu_overlay.fill((255, 255, 255, 100))                                                  # Fill surface with transparent white
 
-        render_line(font64, "menu placeholder", bar_surface, (255, 255, 0), 100)                # Actual data
+        render_line(font64, "menu placeholder", menu_overlay, (255, 255, 0), 100)                # Actual data
 
-        render_line(font20_fsb, "Press ESC to continue", bar_surface, (255, 255, 255), bar_surface.get_height() - 100)
-        screen.blit(bar_surface, (0,0))
+        render_line(font20_fsb, "Press ESC to continue", menu_overlay, (255, 255, 255), menu_overlay.get_height() - 100)
+        screen.blit(menu_overlay, (0,0))
+
+        pygame.display.flip()
+        dt += clock.tick(FRAME_RATE_MENU)/1000
+
+def sound_settings():
+
+    mv_sl = Slider(SCREEN_WIDTH / 4, 200, SCREEN_WIDTH / 2, "MASTER volume", global_master_volume, MASTER_VOLUME_MAX, base_color=(100,150,100,150))
+
+    dt = 0
+    while True:                                                                
+        
+        for event in pygame.event.get():                
+            if event.type == pygame.QUIT: exit_msg()                                            # Game killed with x on window
+            if event.type == pygame.KEYDOWN:                         
+                if event.key == pygame.K_ESCAPE: return True                                    # Return to main menu
+            mv_sl.handle_event(event)
+
+        clear_screen()                                                                          # Empty screen
+
+        menu_overlay = pygame.Surface(screen.get_size(), pygame.SRCALPHA)                                               # Create a surface for the menu to be drawn upon
+        menu_overlay.fill((255, 255, 255, 100))                                                                         # Fill surface with transparent white
+
+        vertical_offset = 75
+        vertical_offset = render_line(font64, "Sound", menu_overlay, (255, 255, 0), vertical_offset, 2)                 # Actual data
+
+        ### Menu body
+        mv_sl.draw(menu_overlay)
+        ### Menu body
+
+        render_line(font20_fsb, "Press ESC to continue", menu_overlay, (255, 255, 255), menu_overlay.get_height() - 100)
+        screen.blit(menu_overlay, (0,0))
 
         pygame.display.flip()
         dt += clock.tick(FRAME_RATE_MENU)/1000
@@ -47,48 +79,52 @@ def keybinds_screen():                                                          
 
         clear_screen()                                                                          # Empty screen
 
-        bar_surface = pygame.Surface(screen.get_size(), pygame.SRCALPHA)                        # Create a surface for the menu to be drawn upon
-        bar_surface.fill((255, 255, 255, 100))                                                  # Fill surface with transparent white
+        menu_overlay = pygame.Surface(screen.get_size(), pygame.SRCALPHA)                        # Create a surface for the menu to be drawn upon
+        menu_overlay.fill((255, 255, 255, 100))                                                  # Fill surface with transparent white
         
         vertical_offset = 75
-        vertical_offset = render_line(font64, "Keybinds", bar_surface, (255, 255, 0), vertical_offset, 2)                        # Actual data
-        vertical_offset = render_line(font20_fsb, "Z or ↑ = thrusters", bar_surface, (0, 0, 0), vertical_offset)
-        vertical_offset = render_line(font20_fsb, "S or ↓ = reverse thrusters", bar_surface, (0, 0, 0), vertical_offset)
-        vertical_offset = render_line(font20_fsb, "Q or ← = rotate left", bar_surface, (0, 0, 0), vertical_offset)
-        vertical_offset = render_line(font20_fsb, "D or → = rotate right", bar_surface, (0, 0, 0), vertical_offset)
-        vertical_offset = render_line(font20_fsb, "A = strafe left", bar_surface, (0, 0, 0), vertical_offset)
-        vertical_offset = render_line(font20_fsb, "E = strafe right", bar_surface, (0, 0, 0), vertical_offset,2 )
-        vertical_offset = render_line(font20_fsb, "SPACEBAR = fire main weapon", bar_surface, (0, 0, 0), vertical_offset)
-        vertical_offset = render_line(font20_fsb, "Left SHIFT = BRAKE", bar_surface, (0, 0, 0), vertical_offset)
-        vertical_offset = render_line(font20_fsb, "TAB = Swap rotate & strafe controls (auto used in boss mode)", bar_surface, (0, 0, 0), vertical_offset)
-        vertical_offset = render_line(font20_fsb, "Press ESC to continue", bar_surface, (255, 255, 255), bar_surface.get_height() - 75)
-        screen.blit(bar_surface, (0,0))
+        vertical_offset = render_line(font64, "Keybinds", menu_overlay, (255, 255, 0), vertical_offset, 2)                        # Actual data
+        vertical_offset = render_line(font20_fsb, "Z or ↑ = thrusters", menu_overlay, (0, 0, 0), vertical_offset)
+        vertical_offset = render_line(font20_fsb, "S or ↓ = reverse thrusters", menu_overlay, (0, 0, 0), vertical_offset)
+        vertical_offset = render_line(font20_fsb, "Q or ← = rotate left", menu_overlay, (0, 0, 0), vertical_offset)
+        vertical_offset = render_line(font20_fsb, "D or → = rotate right", menu_overlay, (0, 0, 0), vertical_offset)
+        vertical_offset = render_line(font20_fsb, "A = strafe left", menu_overlay, (0, 0, 0), vertical_offset)
+        vertical_offset = render_line(font20_fsb, "E = strafe right", menu_overlay, (0, 0, 0), vertical_offset,2 )
+        vertical_offset = render_line(font20_fsb, "SPACEBAR = fire main weapon", menu_overlay, (0, 0, 0), vertical_offset)
+        vertical_offset = render_line(font20_fsb, "Left SHIFT = BRAKE", menu_overlay, (0, 0, 0), vertical_offset)
+        vertical_offset = render_line(font20_fsb, "TAB = Swap rotate & strafe controls (auto used in boss mode)", menu_overlay, (0, 0, 0), vertical_offset)
+        vertical_offset = render_line(font20_fsb, "Press ESC to continue", menu_overlay, (255, 255, 255), menu_overlay.get_height() - 75)
+        screen.blit(menu_overlay, (0,0))
         # text = "Use the arrow keys: ↑ ↓ ← →"
         pygame.display.flip()
         dt += clock.tick(FRAME_RATE_MENU)/1000
 
-def game_over_screen(scoreboard, player):                                       # End game with a bang & final scores
+def game_over_screen(scoreboard, player, win=False):                                # End game with a bang & final scores (or victory yell)
 
     if game_sounds.get_busy(): game_sounds.stop()
-    game_over_sound.play()                                                      # BANG
-    player_explosion = Explosion(player.position, 1, player_explosion_frames)
+    if win:
+        game_won_sound.play()                                                       # VICTORY
+    else:
+        game_over_sound.play()                                                      # BANG
+        player_explosion = Explosion(player.position, 1, player_explosion_frames)   # Final player explosion animation
 
     dt = 0
-    while True:                                                                 # Display final score untill player choice
+    while True:                                                                     # Display final score untill player choice
         
         for event in pygame.event.get():                
-            if event.type == pygame.QUIT: exit_msg()                            # Game killed with x on window
+            if event.type == pygame.QUIT: exit_msg()                                # Game killed with x on window
             if event.type == pygame.KEYDOWN:                         
-                if event.key == pygame.K_ESCAPE: return True                    # Return to main menu
+                if event.key == pygame.K_ESCAPE: return True                        # Return to main menu
 
-        clear_screen()             
-        player_explosion.update(dt)
-        player_explosion.draw()                                                 # Animate final player explosion (continues version)
-        if player_explosion.current_frame == len(player_explosion.frames) -1:
-            player_explosion.current_frame = 0
+        clear_screen()
+        if not win:                                                                 # Animate final player explosion (continues version) if lost
+            player_explosion.update(dt)
+            player_explosion.draw()                                                 
+            if player_explosion.current_frame == len(player_explosion.frames) -1:
+                player_explosion.current_frame = 0
         
-        scoreboard.game_over()                                                  # Show final score
-        screen.blit(surface, (0, 0))                                            # overlay surface
+        scoreboard.game_over(win)                                                   # Show final score
+        screen.blit(surface, (0, 0))                                                # overlay surface
         pygame.display.flip()
         dt += clock.tick(FRAME_RATE)/1000
 
@@ -124,33 +160,36 @@ def refresh_screen(player, scoreboard):
     screen.blit(surface, (0, 0))                        # overlay surface
     pygame.display.flip()                               # refresh display
 
-def game_mechanics_boss(boss, player, scoreboard, boss_bullets, shots):
+def game_mechanics_boss(boss, boss_bullets, dt, player, scoreboard, shots):
 
-    game_over =  False                                                      # Init game flow variables
+    if player.lives < 1: return True                                                    # Return game over when no more lives
 
-    for bb in boss_bullets:                                                 # BOSS DAMAGE
-
-        if game_over: return game_over                                      # Abort loop when game has ended
-
-        if player.collides(bb):                                             # PLAYER COLLISION DETECTION
-            if player.lives < 1:                                            
-                game_over = game_over_screen(scoreboard, player)            # Show endscore, track that game is over
+    for bb in boss_bullets:                                                             # BOSS BULLET DAMAGE
+        if player.collides(bb):                                                         # PLAYER COLLISION DETECTION
+            if player.lives < 1: return True                                            # Return game over when no more lives
         
     if boss.ready:
-        for bullet in shots:                                                    # PLAYER DAMAGE
-            boss.rect.topleft = (boss.position.x, boss.position.y)              # Move bounding rect to current boss position
-            if bullet.circle_vs_rect(boss.rect):                                # Bullet in boss rect => closer check through mask
-                if bullet.circle_vs_mask(boss.mask, boss.rect):                 # Check actual detailed hit through mask
-                    asteroid_break_channel.play(hitboss_sound)                  
-                    ExplosionParticleCloud(bullet.position.x, bullet.position.y, 0.5)
-                    boss.reduce_hp(1)
-                    bullet.kill()
-                    if boss.hp < 1:
-                        boss.kill()
-                        boss.ready = False
-                        print("You killed the boss !!!")
+        for bullet in shots:                                                            # PLAYER DAMAGE
+            if boss.hp < 1: break                                                       # Stop processing bullets if boss is dead
+            
+            boss.rect.topleft = (boss.position.x, boss.position.y)                      # Move bounding rect to current boss position
+            if bullet.circle_vs_rect(boss.rect):                                        # Bullet in boss rect => closer check through mask
+                if bullet.circle_vs_mask(boss.mask, boss.rect):                         # Check actual detailed hit through mask
+                    asteroid_break_channel.play(hitboss_sound)                          # Use asteroid break channel since it's free now
+                    ExplosionParticleCloud(bullet.position.x, bullet.position.y, 0.5)   # Show sparkles where boss wass hit
+                    scoreboard.add(BOSS_BASE_HIT_VALUE)                                 # Increase score
+                    boss.reduce_hp(1)                                                   # Reduce boss healht
+                    bullet.kill()                                                       # Remove bullet
 
-    return game_over                                                        # Pass on game flow variables
+        if boss.hp < 1:                                                                 # Check if boss is killed
+            if not boss.death_animation_active(dt):                                     # BURN & VANISH
+                scoreboard.add(BOSS_KILL_VALUE)                                         # Add a fat boss kill valkue
+                boss.kill()                                                             # Clear the boss instance variable
+                boss.ready = False                                                      
+                print("You killed the boss !!!")            
+                return True                                                             # Return game over = True
+
+    return False                                                                        # Return False to indicate boss & player are both alive
 
 def game_mechanics(asteroidfield, player, scoreboard, asteroids, shots):
 
@@ -184,13 +223,14 @@ def game_mechanics(asteroidfield, player, scoreboard, asteroids, shots):
                         asteroidfield.super_spawn(scoreboard.level) 
 
         if player.collides(obj):                                            # PLAYER COLLISION DETECTION
-            if player.lives < 1:                                            
-                game_over = game_over_screen(scoreboard, player)            # Show endscore, track that game is over
+            if player.lives < 1:
+                return True
 
     return game_over                                                        # Pass on game flow variables
 
 def game_loop(asteroidfield, boss, player, scoreboard, asteroids, boss_bullets, drawable, shots, updatable):
-    dt = 0                                                                                      # Init
+    win = False                                                                                 # Inits
+    dt = 0                                                                                      
     clock.tick()                                                                                # Reset the clock's time delta
     while True:
         for event in pygame.event.get():                                                        # Catch screen close button
@@ -204,12 +244,14 @@ def game_loop(asteroidfield, boss, player, scoreboard, asteroids, boss_bullets, 
             
         update_objects(updatable, dt, boss, player)                                             # Recalculate all objects in updatable group
         if not player.boss_active():
-            game_over = game_mechanics(asteroidfield, player, 
-                                       scoreboard, asteroids, shots)                            # Perform actual game mechaniscs
+            game_over = game_mechanics(asteroidfield, player, scoreboard, asteroids, shots)     # Perform actual game mechaniscs
         else:
-            game_over = game_mechanics_boss(boss, player, scoreboard, boss_bullets, shots)      # Perform actual game mechaniscs for boss fight
+            game_over = game_mechanics_boss(boss, boss_bullets, dt, player, scoreboard, shots)  # Perform actual game mechaniscs for boss fight
+            if boss.hp == 0: win = True
 
-        if game_over: return boss, 'MENU'                                                       # Game over => back to menu
+        if game_over:
+            game_over_screen(scoreboard, player, win)                                           # Show endscore, track that game is over
+            return boss, 'MENU'                                                                 # Game over => back to menu
             
         if scoreboard.level == BOSS_SPAWN_LEVEL and not player.boss_active():                   # Spawn boss
             asteroidfield.kill()                                                                # Stop spawning asteroids
@@ -220,7 +262,7 @@ def game_loop(asteroidfield, boss, player, scoreboard, asteroids, boss_bullets, 
             player.shield_regeneration = 0
             player.non_hit_scoring_streak = 0
             player.toggle_boss_mode()                
-            if not player.strafe_active(): player.toggle_strafe()                                 # Force boss fase start in strafe mode
+            if not player.strafe_active(): player.toggle_strafe()                               # Force boss fase start in strafe mode
 
         clear_screen()                                                                          # Drawing section
         draw_objects(drawable)
@@ -265,7 +307,7 @@ def main():
     Shot.containers = (drawable, shots, updatable)
 
     settings_menu = Menu("Settings",[("Keybinds", keybinds_screen, True),
-                                     ("Sound", menu_placeholder, True),
+                                     ("Sound", sound_settings, True),
                                      ("Back", "back", True)])                                           
     main_menu = Menu("Asteroids",[("New Game", "start", True),
                                   ("Resume", "resume", False),
@@ -292,10 +334,11 @@ def main():
             if not game_paused:                                                                 # If we're coming from a game that ended, clean up
                 cleanup_game(updatable, scoreboard)
                 asteroidfield = None                                                            # Set everything to None to ensure we are ready for a new game
+                boss = None
                 player = None
                 scoreboard = None
 
-            result_value = current_menu.handle_menu_loop()                                      # Shop the current menu, recieve the chosen action
+            result_value = current_menu.handle_menu_loop()                                      # Show the current menu, recieve the chosen action
             if result_value == "start":                                                         # Start a new game
                 asteroidfield, player, scoreboard = init_game()
                 game_state = "GAME"

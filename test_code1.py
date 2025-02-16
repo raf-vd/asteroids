@@ -2,22 +2,10 @@ import pygame
 import random
 from enum import Enum
 from constants import *
+from functions import *
 from resources import *
+from slider import Slider
 from particle import ExplosionParticleCloud
-
-class TextType(Enum):
-    NORMAL_TEXT = "Normal text"
-    BOLD_TEXT =   "Bold text"
-    ITALIC_TEXT = "Italic text"
-    CODE_TEXT =   "Code text"
-    LINKS =       "Links"
-    IMAGES =      "Images"
-
-class TextNode():
-    def __init__(self, text, text_type, url=None):
-        self.text = text
-        self.text_type = text_type
-        self.url = url
 
 def factorial(x):
     if x ==1:
@@ -25,16 +13,21 @@ def factorial(x):
     return x * factorial(x-1)
 
 def main():
-    # i=5
-    # print(f"factorial({i}) = {factorial(i)}")
-    
     pygame.init()
-
-    explosions = []
     dt = 0
     frame = 1
+    explosions = []
+
+    c_slider1 = Slider(400, 100, 400, 20, base_color=(100,150,100,150), highlight_border=2)
+    c_slider2 = Slider(400, 150, 400, 20, base_color=(150,100,100,150), border=5)
     while True:
-        surface.fill((0, 0, 0, 255))                          # reset surface
+        surface.fill((0, 0, 0, 0))                          # reset surface
+        screen.blit(background, (0,0))                      # show background
+
+        c_slider1.set_value(30)
+        c_slider2.set_value(60)
+        c_slider1.draw(surface, True)
+        c_slider2.draw(surface, True)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -50,6 +43,7 @@ def main():
             explosion.draw()
 
         explosions = [e for e in explosions if e.is_active()] 
+
 
         screen.blit(surface, (0, 0))  
         pygame.display.flip()

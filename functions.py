@@ -41,10 +41,10 @@ def rect_surface(bar_w, bar_h, colour):
     bar_surface.fill(colour)  
     return bar_surface
 
-def render_line(font, text, bar_surface, colour, vertical_offset=0, line_spacing=1.5):
+def render_line(font, text, target_surface, colour, vertical_offset=0, line_spacing=1.5):
     text_surface = font.render(text, True, colour)
-    text_rect = text_surface.get_rect(center=(bar_surface.get_width() / 2, vertical_offset))
-    bar_surface.blit(text_surface, text_rect)
+    text_rect = text_surface.get_rect(center=(target_surface.get_width() / 2, vertical_offset))
+    target_surface.blit(text_surface, text_rect)
     return int(vertical_offset + line_spacing * font.get_linesize())
 
 def biased_random():
@@ -71,3 +71,16 @@ def create_circle_mask(radius): # Create a circle
     surf = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
     pygame.draw.circle(surf, (255, 255, 255), (radius, radius), radius)
     return pygame.mask.from_surface(surf)
+
+def get_lighter_color(color, factor=0.5): # Higher factor = lighter color, 0 = original,  1 = white, 
+    r = min(255, int(color[0] + (255 - color[0]) * factor))
+    g = min(255, int(color[1] + (255 - color[1]) * factor))
+    b = min(255, int(color[2] + (255 - color[2]) * factor))
+    return (r, g, b)
+
+def get_darker_color(color, factor=0.7):  # factor 1 = original, 0 = black
+    factor = min(1, factor) # > 1 value would mean lighter and possibly > 255 (use get_lighter_color() for that)
+    r = int(color[0] * factor)
+    g = int(color[1] * factor)
+    b = int(color[2] * factor)
+    return (r, g, b)

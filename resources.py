@@ -1,7 +1,7 @@
 import pygame
 import os
 import sys
-from constants import SCREEN_HEIGHT, SCREEN_WIDTH
+from constants import MASTER_VOLUME_MAX, SCREEN_HEIGHT, SCREEN_WIDTH
 
 # Ensure dynamic pathing works
 def resource_path(relative_path):
@@ -11,24 +11,29 @@ def resource_path(relative_path):
 
 # Game mechanics
 if True:
+    clock = pygame.time.Clock()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
-    clock = pygame.time.Clock()
+    
 
 # Sound 
 if True:
     pygame.mixer.init(44100, -16, 2, 2048)
-    alert_channel = pygame.mixer.Channel(1)
-    shield_channel = pygame.mixer.Channel(2)
-    shot_channel = pygame.mixer.Channel(3)
-    asteroid_break_channel = pygame.mixer.Channel(4)
-    game_sounds = pygame.mixer.Channel(5)
+    asteroid_break_channel = pygame.mixer.Channel(1)
+    alert_channel = pygame.mixer.Channel(2)
+    boss_laser_channel = pygame.mixer.Channel(3)
+    game_sounds = pygame.mixer.Channel(4)
+    shield_channel = pygame.mixer.Channel(5)
+    shot_channel = pygame.mixer.Channel(6)
     # Sounds
   # relative location
     alert_sound_path = resource_path("sound/alarm.mp3")
+    boss_bullet_sound_path = resource_path('sound/boss_bullet.wav')
+    boss_laser_sound_path = resource_path('sound/boss_laser.wav')
     crack_lump_sound_path = resource_path("sound/crack.wav")
     crack_main_sound_path = resource_path("sound/explosion.mp3")
     game_over_sound_path = resource_path("sound/game_over.mp3")
+    game_won_sound_path = resource_path("sound/game_won.wav")
     level_up_sound_path = resource_path("sound/shroom_up.mp3")
     player_death_sound_path = resource_path("sound/crash.mp3")
     shield_hit_sound_path = resource_path("sound/buzz.mp3")
@@ -39,24 +44,44 @@ if True:
 
   # dynamic pathing
     alert_sound = pygame.mixer.Sound(alert_sound_path) 
+    boss_bullet_sound = pygame.mixer.Sound(boss_bullet_sound_path)
+    boss_laser_sound = pygame.mixer.Sound(boss_laser_sound_path)
     crack_lump_sound = pygame.mixer.Sound(crack_lump_sound_path)
     crack_main_sound = pygame.mixer.Sound(crack_main_sound_path)
     game_over_sound = pygame.mixer.Sound(game_over_sound_path)
+    game_won_sound = pygame.mixer.Sound(game_won_sound_path)
+    hitboss_sound = pygame.mixer.Sound(hitboss_path)
     level_up_sound = pygame.mixer.Sound(level_up_sound_path)
     player_death_sound = pygame.mixer.Sound(player_death_sound_path)
     shield_hit_sound = pygame.mixer.Sound(shield_hit_sound_path)
     shot_sound = pygame.mixer.Sound(shot_sound_path)
-    hitboss_sound = pygame.mixer.Sound(hitboss_path)
     # Music
     background_music = pygame.mixer.music.load(background_music)
-  # Volume control  
-    alert_sound.set_volume(0.5)
-    crack_lump_sound.set_volume(0.3)
-    crack_main_sound.set_volume(0.6)
-    shot_sound.set_volume(0.2)
-    hitboss_sound.set_volume(0.2)
-    pygame.mixer.music.set_volume(0.10)
-
+    # Volume balancing
+    balanced_volumes = {
+        alert_sound: 0.5,
+        boss_bullet_sound: 0.4,
+        boss_laser_sound: 0.8,
+        crack_lump_sound: 0.3,
+        crack_main_sound: 0.6,
+        game_over_sound: 1.0,
+        game_won_sound: 1.0,
+        hitboss_sound: 0.2,
+        level_up_sound: 1.0,
+        player_death_sound: 1.0,
+        shield_hit_sound: 1.0,
+        shot_sound: 0.2,
+    }
+    # Function to handle a master volume setting
+    def apply_master_volume(master_volume=1.0):               
+        master_volume = min(master_volume, 1.0)               # Cap master volume at 100%
+        for sound, base_volume in balanced_volumes.items():   # Loop sounds in dict
+            sound.set_volume(base_volume * master_volume)     # Apply new master volume setting
+        pygame.mixer.music.set_volume(0.10 * master_volume)   # Also apply to music mixer
+        return master_volume
+    # Apply initial master volume (90%)
+    global_master_volume = apply_master_volume(MASTER_VOLUME_MAX * 0.9)  
+    
 # Fonts
 if True:
     # FreeSans_otf = resource_path("font/FreeSans.otf")

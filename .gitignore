@@ -3,6 +3,7 @@ venv/
 build/
 dist/
 __pycache__/
+trouble.py
 *.pyc
 *.spec
 #test_code*.py

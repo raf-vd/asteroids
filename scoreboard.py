@@ -10,10 +10,11 @@ class ScoreBoard():
         self.level = level
         self.level_score = 0
 
-    def game_over(self):
+    def game_over(self, win=False):
+        condition = "VICTORY" if win else "GAME OVER"
         bar_surface = rect_surface(400, 300, (255, 255, 255, 100))
         render_line(font48, f"Final score: {int(self.score)}", bar_surface, (150, 255, 150, 255), 50)
-        render_line(font48, f"GAME OVER", bar_surface, (255, 0, 0, 100), 125)
+        render_line(font48, f"{condition}", bar_surface, (255, 0, 0, 100), 125)
         render_line(font48, f"Final level: {self.level}", bar_surface, (255, 255, 255, 0), 200)
         render_line(font36, f"Press ESC to continue", bar_surface, (0, 0, 0, 0), bar_surface.get_height() - 25)
         surface.blit(bar_surface, ((SCREEN_WIDTH - bar_surface.get_width()) / 2, (SCREEN_HEIGHT - bar_surface.get_height()) / 2))

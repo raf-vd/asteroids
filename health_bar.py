@@ -6,7 +6,6 @@ class HealthBar(pygame.sprite.Sprite):
     def __init__(self, width, height, max_value, color=(0,75,25,100)):
         super().__init__(self.containers) 
         self.color = color                                                                  # Can be used to set/get a fixed initial color
-        # self.image = rect_surface(width, height, (75,0,0,100))
         self.surface = rect_surface(width, height, (0,0,0,0))                               # Surface to rectangle/draw bar on
         self.surfacebar = rect_surface(width, height, self.color)                           # Bar to hold the actual value
         self.rect = self.surface.get_rect()

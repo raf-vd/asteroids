@@ -16,7 +16,7 @@ class LumpyAsteroid(CircleShape):
         if self.special:
             self.score_value = 0                                # Special asteroids are smaller and have no value => nasty
         else:
-            self.score_value = 1800 / self.radius
+            self.score_value = ASTEROID_BASE_VALUE / self.radius
         # self.colour = self.get_colour(random.randint(190, 200))
         self.colour = self.get_colour(random.randint(200, 210))
 

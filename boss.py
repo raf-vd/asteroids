@@ -2,8 +2,9 @@ import pygame
 import random
 from constants import *
 from functions import point_to_line_distance, scale_to_circle
-from resources import boss_bullet_frames, surface
+from resources import boss_bullet_sound, boss_laser_channel, boss_laser_sound, boss_bullet_frames, shot_channel, surface
 from circleshape import CircleShape
+from particle import ExplosionParticleCloud
 from health_bar import HealthBar
 
 class Boss(pygame.sprite.Sprite):
@@ -18,30 +19,34 @@ class Boss(pygame.sprite.Sprite):
         self.target_y1 = 125                                # Boss low point
         self.target_y2 = self.target_y1 - 50                # Boss high point
         self.image = image  
-        self.image.set_alpha(225)                           # Set transparency, values range from 0 (completely transparent) to 255 (completely opaque)
+        self.image.set_alpha(225)                           # Set transparency, values range from 0 (completely transparent) to 255 (completely solid)
         self.mask = pygame.mask.from_surface(self.image)    # Create a mask from the non-transparent pixel
         self.rect = self.image.get_rect()
         self.spawn_wait = 2
         self.max_hp = 25
         self.hp = 25
+        self.death_animation_duration = 5.0
         self.health_bar = None
         self.ready = False
         self.alive = True
         self.bullets = []
         self.boss_bullet_cooldown = 2                       # Time between boss bullets
-        self.laser_cooldown = 10                            # Time between boss laser activations
+        self.laser_cooldown = BOSS_LASER_COOLDOWN           # Time between boss laser activations
         self.laser_radius = 1                               # Init laser spawning point radius
         self.laser_x = SCREEN_WIDTH                         # Init lasertarget x coordinate
         self.laser_color = (150,255,255,128)
 
     def update(self, dt, player):
+
+        if self.hp == 0: return                                                                                                 # Stop calculating anything when dead      
+
         self.basic_movement(dt)                                                                                                 # Move around a bit
         if not self.ready: return                                                                                               # Fully spawn/descend first
 
-        if self.laser_cooldown > 0:                                                                                        # Control laser frequency
+        if self.laser_cooldown > 0:                                                                                             # Control laser frequency
             self.laser_cooldown -= dt
         else:
-            self.laser_cooldown = 5
+            self.laser_cooldown = BOSS_LASER_COOLDOWN                                                                           # Reset cooldown
         
         if self.laser_cooldown < 1:                                                                                             # Charge and Fire laser in 3 steps
             dx = random.randint(0, 100)
@@ -50,6 +55,7 @@ class Boss(pygame.sprite.Sprite):
             self.laser_radius = 6                                                                                               # Store laser spawn spot size in attribute for reference while firing
             if self.laser_hits_target(player): player.take_laser_hit()                                                          # Check & handle if/when lear hit the player
         elif self.laser_cooldown < 1.1:
+            if not boss_laser_channel.get_busy(): boss_laser_sound.play()                                                       # Has it's own channel to force 1x play and not each beam
             self.laser_radius *= 1.2                                                                                            # Increase radius for burst-out effect right before firing
         elif self.laser_cooldown < 2:
             self.laser_radius += 0.175                                                                                          # Build up radius to indicate charging laser a bit before firing
@@ -61,7 +67,16 @@ class Boss(pygame.sprite.Sprite):
         else:
             self.boss_bullet_cooldown = 2                                   
             dx = random.choice([int(self.position.x) - 185, int(self.position.x) + 175])                                        # Randomly pick Left or Right side to fire from
-            self.bullets.append(BossBullet(self.image.get_width() / 2 + dx, self.position.y + self.image.get_height() - 10))    # Spawn a bullet when timer reaches 0
+            bb_size = BOSS_BULLET_SIZE
+            if self.hp / self.max_hp < 0.25:                                                                                    # Increase size of boss bullets depending on his damaged %
+                bb_size *= 1.75                                                                                 
+            elif self.hp / self.max_hp < 0.50:          
+                bb_size *= 1.50
+            elif self.hp / self.max_hp < 0.75:          
+                bb_size *= 1.25
+            self.bullets.append(BossBullet(self.image.get_width() / 2 + dx, 
+                                           self.position.y + self.image.get_height() - 10, 
+                                           bb_size))                                                                            # Spawn a bullet when timer reaches 0
 
     def draw(self):
         surface.blit(self.image, self.position)                             # Draw boss
@@ -69,9 +84,54 @@ class Boss(pygame.sprite.Sprite):
             self.health_bar.draw(self.position)                             # Draw healthbar (only active after fully spawning in)
         self.draw_laser((150,255,255,128), self.laser_x, SCREEN_HEIGHT)     # Draw laser
 
+        # Draw some sparkles to indicate boss is on fire
+        if self.hp / self.max_hp < 0.25:
+            size = 50
+            ExplosionParticleCloud(self.position.x + 1/6 * self.image.get_width(), self.position.y + 2/3 * self.image.get_height(), 0.1, size)   # Show sparkles where boss wass hit
+            ExplosionParticleCloud(self.position.x + 5/6 * self.image.get_width(), self.position.y + 2/3 * self.image.get_height(), 0.1, size)   # Show sparkles where boss wass hit
+            ExplosionParticleCloud(self.position.x + 2/6 * self.image.get_width(), self.position.y + 1/5 * self.image.get_height(), 0.1, size)   # Show sparkles where boss wass hit
+            ExplosionParticleCloud(self.position.x + 4/6 * self.image.get_width(), self.position.y + 4/5 * self.image.get_height(), 0.1, size)   # Show sparkles where boss wass hit
+        elif self.hp / self.max_hp < 0.50:
+            size = 35
+            ExplosionParticleCloud(self.position.x + 1/6 * self.image.get_width(), self.position.y + 2/3 * self.image.get_height(), 0.1, size)   # Show sparkles where boss wass hit
+            ExplosionParticleCloud(self.position.x + 5/6 * self.image.get_width(), self.position.y + 2/3 * self.image.get_height(), 0.1, size)   # Show sparkles where boss wass hit
+        elif self.hp / self.max_hp < 0.75:
+            size = 10
+            ExplosionParticleCloud(self.position.x + 1/6 * self.image.get_width(), self.position.y + 2/3 * self.image.get_height(), 0.05, size)   # Show sparkles where boss wass hit
+            ExplosionParticleCloud(self.position.x + 5/6 * self.image.get_width(), self.position.y + 2/3 * self.image.get_height(), 0.05, size)   # Show sparkles where boss wass hit
+
+    def death_animation_active(self, dt):
+        if self.death_animation_duration > 0:
+            self.death_animation_duration -= dt
+            alpha = self.image.get_alpha() - 0.50
+            self.image.set_alpha(max(alpha,0))
+        else:
+            return False
+        if self.image.get_alpha() < 10:
+            size = 10
+            duration = 0.4
+        elif self.image.get_alpha() < 50:
+            size = 25
+            duration = 0.3
+        elif self.image.get_alpha() < 100:
+            size = 50
+            duration = 0.2
+        else:
+            size = 75
+            duration = 0.1
+        ExplosionParticleCloud(self.position.x + 1/6 * self.image.get_width(), self.position.y + 2/3 * self.image.get_height(), duration, size)   # Show sparkles where boss wass hit
+        ExplosionParticleCloud(self.position.x + 5/6 * self.image.get_width(), self.position.y + 2/3 * self.image.get_height(), duration, size)   # Show sparkles where boss wass hit
+        ExplosionParticleCloud(self.position.x + 2/6 * self.image.get_width(), self.position.y + 1/5 * self.image.get_height(), duration, size)   # Show sparkles where boss wass hit
+        ExplosionParticleCloud(self.position.x + 4/6 * self.image.get_width(), self.position.y + 4/5 * self.image.get_height(), duration, size)   # Show sparkles where boss wass hit
+        ExplosionParticleCloud(self.position.x + 1/2 * self.image.get_width(), self.position.y + 1/2 * self.image.get_height(), duration, size)   # Show sparkles where boss wass hit
+        ExplosionParticleCloud(self.position.x + 5/6 * self.image.get_width(), self.position.y + 1/4 * self.image.get_height(), duration, size)   # Show sparkles where boss wass hit
+        ExplosionParticleCloud(self.position.x + 4/7 * self.image.get_width(), self.position.y + 3/5 * self.image.get_height(), duration, size)   # Show sparkles where boss wass hit
+        return True
+
     def draw_laser(self, color, x2, y2):
         x_start = self.position.x + (self.image.get_width() / 2)                            # Laser starting point coordinates
         y_start = self.position.y + 50 + (self.image.get_height() / 2)
+        if self.hp == 0: return                                                             # Stop drawing lasers when dead
         if self.laser_cooldown  < 1:
             pygame.draw.line(surface, color, (x_start, y_start), (x2, y2), 5)               # Draw laser in final second of timer
         if self.laser_cooldown < 2:
@@ -94,7 +154,7 @@ class Boss(pygame.sprite.Sprite):
             return
         else:
             self.spawn_wait = 0                                     # make sure spawn_wait is at exactly 0, so not negative
-        
+
         if self.framecount % 300 == 0:                              # Every 300 frames => randomlt change directions (or not)
             self.horizontal = random.choice([1, -1])
             self.vertical = random.choice([1, -1])
@@ -210,8 +270,9 @@ class Boss(pygame.sprite.Sprite):
 
 
 class BossBullet(CircleShape):
-    def __init__(self, x, y, radius=25, speed=2):
+    def __init__(self, x, y, radius=BOSS_BULLET_SIZE, speed=2):
         super().__init__(x, y, radius)
+        shot_channel.play(boss_bullet_sound)
         self.frames =  boss_bullet_frames
         self.normalize_frames()                                 # 1x untill I have decent frame images
         self.current_frame = 0
