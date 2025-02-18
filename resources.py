@@ -2,6 +2,7 @@ import pygame
 import os
 import sys
 from constants import MASTER_VOLUME_MAX, SCREEN_HEIGHT, SCREEN_WIDTH
+from gamedata import settings
 
 # Ensure dynamic pathing works
 def resource_path(relative_path):
@@ -11,10 +12,9 @@ def resource_path(relative_path):
 
 # Game mechanics
 if True:
-    clock = pygame.time.Clock()
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
-    
+    clock = pygame.time.Clock()                                                     # Gameloop clock
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))                 # Game screen
+    surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)        # Game Surface
 
 # Sound 
 if True:
@@ -73,14 +73,24 @@ if True:
         shot_sound: 0.2,
     }
     # Function to handle a master volume setting
-    def apply_master_volume(master_volume=1.0):               
-        master_volume = min(master_volume, 1.0)               # Cap master volume at 100%
-        for sound, base_volume in balanced_volumes.items():   # Loop sounds in dict
-            sound.set_volume(base_volume * master_volume)     # Apply new master volume setting
-        pygame.mixer.music.set_volume(0.10 * master_volume)   # Also apply to music mixer
-        return master_volume
-    # Apply initial master volume (90%)
-    global_master_volume = apply_master_volume(MASTER_VOLUME_MAX * 0.9)  
+    def apply_master_volume(factor=1.0, music=True, sounds=True):           # optional parameters to reuse code for sound/music control only
+        factor = min(factor, 1.0)                                           # Cap factor at 100%
+        if sounds:                                                          # Apply to sounds
+            for sound, base_volume in balanced_volumes.items():             # Loop sounds in dict
+                sound.set_volume(base_volume * factor)                      # Apply new factored volume setting
+        if music: pygame.mixer.music.set_volume(0.10 * factor)              # Apply to music mixer
+        return factor                                                       # Return factor for storing
+    
+    def apply_music_volume(factor=1.0):                                     # Adjust only music
+        return apply_master_volume(factor, sounds=False)                    # Return value for storing
+
+    def apply_sounds_volume(factor=1.0):                                    # Adjust only sounds
+        return apply_master_volume(factor, music=False)                     # Return value for storing
+
+    apply_master_volume(MASTER_VOLUME_MAX * settings.get("master volume"))# Apply initial master volume (90% of max) 
+    global_sounds_volume = 1.0                                              # Set 1.0 (already affected by master volume)
+    global_music_volume = 1.0                                               # Set 1.0 (already affected by master volume)
+
     
 # Fonts
 if True:

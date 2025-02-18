@@ -1,7 +1,8 @@
 import pygame
 from constants import SCREEN_WIDTH
-from resources import background, font32, font64, screen, surface
 from functions import exit_msg
+from gamedata import settings
+from resources import background, font32, font64, screen, surface
 
 class Menu:
     def __init__(self, title, options=None):
@@ -45,7 +46,7 @@ class Menu:
         while menu_active:                                                                          # Loop to keep menu active
             for event in pygame.event.get():                                                        # Get user input & process it
                 if event.type == pygame.QUIT:                                                       # Game killed with x on window
-                    exit_msg()
+                    exit_msg(settings)
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_UP or event.key == pygame.K_DOWN:                      # Move selection
                         direction = -1 if event.key == pygame.K_UP else 1                           # Previous or next

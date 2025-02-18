@@ -1,6 +1,8 @@
 import pygame
 from constants import *
-from resources import asteroid_break_channel, background, boss_image, clock, font20_fsb, font64, game_over_sound, game_won_sound, game_sounds, global_master_volume, hitboss_sound, player_explosion_frames, screen, surface
+from resources import (settings,
+                       apply_master_volume, apply_music_volume, apply_sounds_volume,
+                       asteroid_break_channel, background, boss_image, clock, font20_fsb, font64, game_over_sound, game_won_sound, game_sounds, hitboss_sound, player_explosion_frames, screen, shot_sound, surface)
 from functions import exit_msg, render_line
 from explosion import Explosion
 from asteroid import LumpyAsteroid
@@ -19,16 +21,16 @@ def menu_placeholder():
     while True:                                                                
         
         for event in pygame.event.get():                
-            if event.type == pygame.QUIT: exit_msg()                                            # Game killed with x on window
+            if event.type == pygame.QUIT: exit_msg(settings)                                    # Game killed with x on window
             if event.type == pygame.KEYDOWN:                         
                 if event.key == pygame.K_ESCAPE: return True                                    # Return to main menu
 
         clear_screen()                                                                          # Empty screen
 
-        menu_overlay = pygame.Surface(screen.get_size(), pygame.SRCALPHA)                        # Create a surface for the menu to be drawn upon
-        menu_overlay.fill((255, 255, 255, 100))                                                  # Fill surface with transparent white
+        menu_overlay = pygame.Surface(screen.get_size(), pygame.SRCALPHA)                       # Create a surface for the menu to be drawn upon
+        menu_overlay.fill((255, 255, 255, 100))                                                 # Fill surface with transparent white
 
-        render_line(font64, "menu placeholder", menu_overlay, (255, 255, 0), 100)                # Actual data
+        render_line(font64, "menu placeholder", menu_overlay, (255, 255, 0), 100)               # Actual data
 
         render_line(font20_fsb, "Press ESC to continue", menu_overlay, (255, 255, 255), menu_overlay.get_height() - 100)
         screen.blit(menu_overlay, (0,0))
@@ -37,31 +39,48 @@ def menu_placeholder():
         dt += clock.tick(FRAME_RATE_MENU)/1000
 
 def sound_settings():
+    global global_music_volume                                                                                          # global keyword needed because the variables (possibly) get changed
+    global global_sounds_volume
 
-    mv_sl = Slider(SCREEN_WIDTH / 4, 200, SCREEN_WIDTH / 2, "MASTER volume", global_master_volume, MASTER_VOLUME_MAX, base_color=(100,150,100,150))
+    # Declare sliders
+    master_volume_slider = Slider(SCREEN_WIDTH / 4, 200, SCREEN_WIDTH / 2, "MASTER volume", settings.get("master volume"), MASTER_VOLUME_MAX, base_color=(100,150,100,150))
+    music_volume_slider = Slider(SCREEN_WIDTH / 4, 300, SCREEN_WIDTH / 2, "MUSIC volume", settings.get("music volume"), MASTER_VOLUME_MAX, base_color=(100,150,100,150))
+    sounds_volume_slider = Slider(SCREEN_WIDTH / 4, 400, SCREEN_WIDTH / 2, "SOUNDS volume", settings.get("sounds volume"), MASTER_VOLUME_MAX, base_color=(100,150,100,150))
 
     dt = 0
     while True:                                                                
         
         for event in pygame.event.get():                
-            if event.type == pygame.QUIT: exit_msg()                                            # Game killed with x on window
+            if event.type == pygame.QUIT: exit_msg(settings)                                                                    # Game killed with x on window
             if event.type == pygame.KEYDOWN:                         
-                if event.key == pygame.K_ESCAPE: return True                                    # Return to main menu
-            mv_sl.handle_event(event)
+                if event.key == pygame.K_ESCAPE: return True                                                                    # Return to previous menu on ESC
 
-        clear_screen()                                                                          # Empty screen
+                # Apply changes on ENTER                                                            
+                if (event.key == pygame.K_KP_ENTER) or (event.key == pygame.K_RETURN):
+                    settings.set("master volume", apply_master_volume(MASTER_VOLUME_MAX * master_volume_slider.get_value()))    # Adjust all volumes 1st
+                    settings.set("music volume", music_volume_slider.get_value())                                               # Store music & sound values BEFORE master volume adjustment
+                    settings.set("sounds volume", sounds_volume_slider.get_value())
+                    apply_music_volume(settings.get("master volume") * settings.get("music volume"))                            # Adjust music & sounds (based off CURRENT master volume)
+                    apply_sounds_volume(settings.get("master volume") * settings.get("sounds volume"))                                   
+                    shot_sound.play()                                                                                           # Play a sound for reference
 
-        menu_overlay = pygame.Surface(screen.get_size(), pygame.SRCALPHA)                                               # Create a surface for the menu to be drawn upon
-        menu_overlay.fill((255, 255, 255, 100))                                                                         # Fill surface with transparent white
+            # Handle events for sliders                   
+            master_volume_slider.handle_event(event)                                                                            # Handle master volume slider events
+            music_volume_slider.handle_event(event)                                                                             # Handle music volume slider events
+            sounds_volume_slider.handle_event(event)                                                                            # Handle sounds volume slider events
+
+        clear_screen()                                                                                                          # Empty screen
+
+        menu_overlay = pygame.Surface(screen.get_size(), pygame.SRCALPHA)                                                       # Create a surface for the menu to be drawn upon
+        menu_overlay.fill((255, 255, 255, 100))                                                                                 # Fill surface with transparent white
 
         vertical_offset = 75
-        vertical_offset = render_line(font64, "Sound", menu_overlay, (255, 255, 0), vertical_offset, 2)                 # Actual data
+        vertical_offset = render_line(font64, "Sound", menu_overlay, (255, 255, 0), vertical_offset, 2)                         # Title
+        master_volume_slider.draw(menu_overlay)                                                                                 # Master Volume slider
+        music_volume_slider.draw(menu_overlay)                                                                                  # Music Volume slider
+        sounds_volume_slider.draw(menu_overlay)                                                                                 # Sounds Volume slider
 
-        ### Menu body
-        mv_sl.draw(menu_overlay)
-        ### Menu body
-
-        render_line(font20_fsb, "Press ESC to continue", menu_overlay, (255, 255, 255), menu_overlay.get_height() - 100)
+        render_line(font20_fsb, "Press ENTER to Save changes, ESC to Cancel", menu_overlay, (255, 255, 255), menu_overlay.get_height() - 100)
         screen.blit(menu_overlay, (0,0))
 
         pygame.display.flip()
@@ -73,14 +92,14 @@ def keybinds_screen():                                                          
     while True:                                                                
         
         for event in pygame.event.get():                
-            if event.type == pygame.QUIT: exit_msg()                                            # Game killed with x on window
+            if event.type == pygame.QUIT: exit_msg(settings)                                    # Game killed with x on window
             if event.type == pygame.KEYDOWN:                         
                 if event.key == pygame.K_ESCAPE: return True                                    # Return to main menu
 
         clear_screen()                                                                          # Empty screen
 
-        menu_overlay = pygame.Surface(screen.get_size(), pygame.SRCALPHA)                        # Create a surface for the menu to be drawn upon
-        menu_overlay.fill((255, 255, 255, 100))                                                  # Fill surface with transparent white
+        menu_overlay = pygame.Surface(screen.get_size(), pygame.SRCALPHA)                       # Create a surface for the menu to be drawn upon
+        menu_overlay.fill((255, 255, 255, 100))                                                 # Fill surface with transparent white
         
         vertical_offset = 75
         vertical_offset = render_line(font64, "Keybinds", menu_overlay, (255, 255, 0), vertical_offset, 2)                        # Actual data
@@ -95,7 +114,7 @@ def keybinds_screen():                                                          
         vertical_offset = render_line(font20_fsb, "TAB = Swap rotate & strafe controls (auto used in boss mode)", menu_overlay, (0, 0, 0), vertical_offset)
         vertical_offset = render_line(font20_fsb, "Press ESC to continue", menu_overlay, (255, 255, 255), menu_overlay.get_height() - 75)
         screen.blit(menu_overlay, (0,0))
-        # text = "Use the arrow keys: ↑ ↓ ← →"
+
         pygame.display.flip()
         dt += clock.tick(FRAME_RATE_MENU)/1000
 
@@ -112,7 +131,7 @@ def game_over_screen(scoreboard, player, win=False):                            
     while True:                                                                     # Display final score untill player choice
         
         for event in pygame.event.get():                
-            if event.type == pygame.QUIT: exit_msg()                                # Game killed with x on window
+            if event.type == pygame.QUIT: exit_msg(settings)                        # Game killed with x on window
             if event.type == pygame.KEYDOWN:                         
                 if event.key == pygame.K_ESCAPE: return True                        # Return to main menu
 
@@ -235,7 +254,7 @@ def game_loop(asteroidfield, boss, player, scoreboard, asteroids, boss_bullets, 
     while True:
         for event in pygame.event.get():                                                        # Catch screen close button
             if event.type == pygame.QUIT:
-                exit_msg()                                                                      # Forced quit by x on window
+                exit_msg(settings)                                                              # Forced quit by x on window
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:                   # Allow menu access in the game loop
                 return boss, 'PAUSE'
             if event.type == pygame.KEYDOWN:
@@ -360,7 +379,7 @@ def main():
             boss, game_state = game_loop(asteroidfield, boss, player, scoreboard, 
                                          asteroids, boss_bullets, drawable, shots, updatable)
 
-    exit_msg()                                                                                  # Close the program with a final message
+    exit_msg(settings)                                                                          # Close the program with a final message
 
 # Start program
 if __name__ == "__main__":

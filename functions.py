@@ -32,7 +32,9 @@ def point_in_triangle(point, triangle_points):
     
     return not (has_neg and has_pos)
 
-def exit_msg():
+def exit_msg(settings=None, highscores=None):
+    if settings: settings.save_to_file()                # Store settings when provided
+    if highscores: highscores.save_to_file()            # Store highscores when provided
     print("Asteroids ended!")                           # Th-Th-That's it folks!
     sys.exit()
 
