@@ -23,8 +23,8 @@ class Boss(pygame.sprite.Sprite):
         self.mask = pygame.mask.from_surface(self.image)    # Create a mask from the non-transparent pixel
         self.rect = self.image.get_rect()
         self.spawn_wait = 2
-        self.max_hp = 25
-        self.hp = 25
+        self.max_hp = BOSS_HP
+        self.hp = BOSS_HP
         self.death_animation_duration = 5.0
         self.health_bar = None
         self.ready = False

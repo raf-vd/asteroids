@@ -1,9 +1,9 @@
 import pygame
 from constants import *
-from resources import (settings,
-                       apply_master_volume, apply_music_volume, apply_sounds_volume,
-                       asteroid_break_channel, background, boss_image, clock, font20_fsb, font64, game_over_sound, game_won_sound, game_sounds, hitboss_sound, player_explosion_frames, screen, shot_sound, surface)
 from functions import exit_msg, render_line
+from gamedata import highscores, settings
+from resources import (apply_master_volume, apply_music_volume, apply_sounds_volume,
+                       asteroid_break_channel, background, boss_image, clock, font20_fsb, font36, font64, game_over_sound, game_won_sound, game_sounds, hitboss_sound, player_explosion_frames, screen, shot_sound, surface)
 from explosion import Explosion
 from asteroid import LumpyAsteroid
 from asteroidfield import AsteroidField
@@ -38,10 +38,7 @@ def menu_placeholder():
         pygame.display.flip()
         dt += clock.tick(FRAME_RATE_MENU)/1000
 
-def sound_settings():
-    global global_music_volume                                                                                          # global keyword needed because the variables (possibly) get changed
-    global global_sounds_volume
-
+def sound_settings_screen():
     # Declare sliders
     master_volume_slider = Slider(SCREEN_WIDTH / 4, 200, SCREEN_WIDTH / 2, "MASTER volume", settings.get("master volume"), MASTER_VOLUME_MAX, base_color=(100,150,100,150))
     music_volume_slider = Slider(SCREEN_WIDTH / 4, 300, SCREEN_WIDTH / 2, "MUSIC volume", settings.get("music volume"), MASTER_VOLUME_MAX, base_color=(100,150,100,150))
@@ -86,13 +83,37 @@ def sound_settings():
         pygame.display.flip()
         dt += clock.tick(FRAME_RATE_MENU)/1000
 
-def keybinds_screen():                                                                           # Show information screen with keybinds for the game
+def highscores_screen():                                                                        # Show the top 5 scores recorded
+    dt = 0
+    while True:
+
+        for event in pygame.event.get():                
+            if event.type == pygame.QUIT: exit_msg()                                            # Game killed with x on window
+            if event.type == pygame.KEYDOWN:                         
+                if event.key == pygame.K_ESCAPE: return True                                    # Return to main menu
+
+        clear_screen()                                                                          # Empty screen
+
+        menu_overlay = pygame.Surface(screen.get_size(), pygame.SRCALPHA)                       # Create a surface for the menu to be drawn upon
+        menu_overlay.fill((255, 255, 255, 100))                                                 # Fill surface with transparent white
+        
+        vertical_offset = 100
+        vertical_offset = render_line(font64, f"Highscores", menu_overlay, (255, 255, 0), vertical_offset, 2)                        # Actual data
+        for name in highscores.settings:
+            vertical_offset = render_line(font36, f"{name:<25} {highscores.settings[name]}" , menu_overlay, (0, 0, 0), vertical_offset,2)
+        vertical_offset = render_line(font20_fsb, "Press ESC to continue", menu_overlay, (255, 255, 255), menu_overlay.get_height() - 100)
+        screen.blit(menu_overlay, (0,0))
+
+        pygame.display.flip()
+        dt += clock.tick(FRAME_RATE_MENU)/1000
+
+def keybinds_screen():                                                                          # Show information screen with keybinds for the game
 
     dt = 0
     while True:                                                                
         
         for event in pygame.event.get():                
-            if event.type == pygame.QUIT: exit_msg(settings)                                    # Game killed with x on window
+            if event.type == pygame.QUIT: exit_msg()                                            # Game killed with x on window
             if event.type == pygame.KEYDOWN:                         
                 if event.key == pygame.K_ESCAPE: return True                                    # Return to main menu
 
@@ -127,6 +148,7 @@ def game_over_screen(scoreboard, player, win=False):                            
         game_over_sound.play()                                                      # BANG
         player_explosion = Explosion(player.position, 1, player_explosion_frames)   # Final player explosion animation
 
+    name = ""
     dt = 0
     while True:                                                                     # Display final score untill player choice
         
@@ -135,6 +157,20 @@ def game_over_screen(scoreboard, player, win=False):                            
             if event.type == pygame.KEYDOWN:                         
                 if event.key == pygame.K_ESCAPE: return True                        # Return to main menu
 
+                if event.key == pygame.K_BACKSPACE:
+                    if len(name) > 0:
+                        name = name[:-1]  # handle backspace
+                elif event.key == pygame.K_RETURN:
+                    # handle enter
+                    highscores.set(name, int(scoreboard.score))
+                    highscores.save_to_file()
+                else:
+                    # get the character that was typed
+                    char = event.unicode
+                    if char.isalnum() or char == " ":  # only allow letters and numbers
+                        if len(name) < 15:
+                            name += char
+
         clear_screen()
         if not win:                                                                 # Animate final player explosion (continues version) if lost
             player_explosion.update(dt)
@@ -142,7 +178,7 @@ def game_over_screen(scoreboard, player, win=False):                            
             if player_explosion.current_frame == len(player_explosion.frames) -1:
                 player_explosion.current_frame = 0
         
-        scoreboard.game_over(win)                                                   # Show final score
+        scoreboard.game_over(win, name)                                             # Show final score
         screen.blit(surface, (0, 0))                                                # overlay surface
         pygame.display.flip()
         dt += clock.tick(FRAME_RATE)/1000
@@ -326,12 +362,13 @@ def main():
     Shot.containers = (drawable, shots, updatable)
 
     settings_menu = Menu("Settings",[("Keybinds", keybinds_screen, True),
-                                     ("Sound", sound_settings, True),
+                                     ("Sound", sound_settings_screen, True),
                                      ("Back", "back", True)])                                           
     main_menu = Menu("Asteroids",[("New Game", "start", True),
                                   ("Resume", "resume", False),
                                   ("Settings", settings_menu, True),
                                   ("Abort Game", "end", False),
+                                  ("Highscores", highscores_screen, True),
                                   ("Exit", "quit", True)])                                           
     current_menu = main_menu                                                                    # Track current menu
 

@@ -87,10 +87,9 @@ if True:
     def apply_sounds_volume(factor=1.0):                                    # Adjust only sounds
         return apply_master_volume(factor, music=False)                     # Return value for storing
 
-    apply_master_volume(MASTER_VOLUME_MAX * settings.get("master volume"))# Apply initial master volume (90% of max) 
-    global_sounds_volume = 1.0                                              # Set 1.0 (already affected by master volume)
-    global_music_volume = 1.0                                               # Set 1.0 (already affected by master volume)
-
+    apply_master_volume(MASTER_VOLUME_MAX * settings.get("master volume"))  # Apply initial master volume (90% of max) 
+    global_sounds_volume = settings.get("sounds volume")                    # Set 1.0 (already affected by master volume)
+    global_music_volume = settings.get("music volume")                      # Set 1.0 (already affected by master volume)
     
 # Fonts
 if True:

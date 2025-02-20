@@ -1,5 +1,7 @@
+import pygame
 from constants import *
 from functions import rect_surface, render_line
+from gamedata import highscores
 from resources import font20, font24, font36, font48, game_sounds, level_up_sound, surface
 
 class ScoreBoard():
@@ -10,11 +12,15 @@ class ScoreBoard():
         self.level = level
         self.level_score = 0
 
-    def game_over(self, win=False):
+    def game_over(self, win=False, name=""):
         condition = "VICTORY" if win else "GAME OVER"
         bar_surface = rect_surface(400, 300, (255, 255, 255, 100))
         render_line(font48, f"Final score: {int(self.score)}", bar_surface, (150, 255, 150, 255), 50)
         render_line(font48, f"{condition}", bar_surface, (255, 0, 0, 100), 125)
+
+        if self.is_highscore(name):
+            self.player_name_box(bar_surface, name)
+
         render_line(font48, f"Final level: {self.level}", bar_surface, (255, 255, 255, 0), 200)
         render_line(font36, f"Press ESC to continue", bar_surface, (0, 0, 0, 0), bar_surface.get_height() - 25)
         surface.blit(bar_surface, ((SCREEN_WIDTH - bar_surface.get_width()) / 2, (SCREEN_HEIGHT - bar_surface.get_height()) / 2))
@@ -92,4 +98,21 @@ class ScoreBoard():
         surface.blit(upgrades_text, (10, SCREEN_HEIGHT-30))
         self.__draw_shield_bar(player)
     
-    
+    def is_highscore(self, name):
+        if int(self.score) > list(highscores.settings.values())[-1]:
+            if highscores.settings.get(name) != int(self.score):                                             # Score for this player already saved, only allow player 1x in highscore
+                return True
+        return False
+
+    def player_name_box(self, bar_surface, name_so_far=""):
+        input_surface = rect_surface(185, 30, (0, 0, 0, 255))                                           # Create a surface for the box
+        input_surface.fill((0, 0, 0))                                                                   # Make it black
+        pygame.draw.rect(input_surface, "green", input_surface.get_rect(), 1)                           # Give it a border
+        text_width, _ = font24.size(name_so_far)                                                        # Get cursor position
+        current_time = pygame.time.get_ticks()                                                          # Cursor timer variable
+        if (current_time // 500) % 2:                                                                   # Blinks every 500ms
+            pygame.draw.line(input_surface, "white", (5 + text_width, 5), (5 + text_width, 25))         # Draw cursor
+        bar_surface.blit(font24.render("Enter name for highcore", True, (255,255,0)), (5, 152))         # Show msg
+        input_surface.blit(font24.render(name_so_far, True, (255,255,255)), (5, 6))                     # Show currently typed in name
+        bar_surface.blit(input_surface, (205, 145))                                                     # Blit it all to target surface
+                    
